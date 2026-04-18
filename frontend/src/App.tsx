@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import Map from './components/Map';
 import FloatingControls from './components/FloatingControls';
 import BottomSheet from './components/BottomSheet';
