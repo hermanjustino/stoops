@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Sidebar from './components/Sidebar';
 import Map from './components/Map';
 import { useEvents } from './hooks/useEvents';
-import { StandardEvent } from './types/event';
+import type { StandardEvent } from './types/event';
 
 function App() {
   const NYC_CENTER = { lat: 40.7128, lng: -74.0060 };

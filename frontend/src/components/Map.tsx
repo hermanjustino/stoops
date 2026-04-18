@@ -1,23 +1,7 @@
 import React, { useEffect } from 'react';
 import { APIProvider, Map as GoogleMap, AdvancedMarker, Pin, useMap } from '@vis.gl/react-google-maps';
-import { StandardEvent } from '../types/event';
+import type { StandardEvent } from '../types/event';
 
-type MapStyle = { featureType?: string; elementType?: string; stylers: Record<string, string>[] };
-
-const MAP_STYLES: MapStyle[] = [
-  { featureType: 'poi', elementType: 'all', stylers: [{ visibility: 'off' }] },
-  { featureType: 'poi.park', elementType: 'geometry', stylers: [{ visibility: 'on' }, { color: '#e8f0e4' }] },
-  { featureType: 'transit', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
-  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#ffffff' }] },
-  { featureType: 'road.arterial', elementType: 'geometry', stylers: [{ color: '#f0f0f0' }] },
-  { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#e8e8e8' }] },
-  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#c9d8e8' }] },
-  { featureType: 'landscape', elementType: 'geometry', stylers: [{ color: '#f5f5f7' }] },
-  { featureType: 'administrative.neighborhood', elementType: 'labels.text.fill', stylers: [{ color: '#86868b' }] },
-  { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#9ca3af' }] },
-];
-
-// Color per source for easy visual differentiation
 const SOURCE_COLORS: Record<string, string> = {
   ticketmaster: '#0071E3',
   seatgeek:     '#34C759',
@@ -87,7 +71,6 @@ const Map: React.FC<MapProps> = ({ apiKey, center, events, selectedEventId, onMa
           gestureHandling="greedy"
           disableDefaultUI={true}
           style={{ height: '100%', width: '100%' }}
-          styles={MAP_STYLES}
         >
           <MapInner events={events} selectedEventId={selectedEventId} onMarkerClick={onMarkerClick} />
         </GoogleMap>

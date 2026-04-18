@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Search, Loader2, AlertCircle } from 'lucide-react';
-import { StandardEvent } from '../types/event';
+import type { StandardEvent } from '../types/event';
 import EventCard from './EventCard';
 
 const CATEGORIES = ['All', 'Music', 'Sports', 'Arts & Theatre', 'Miscellaneous'];

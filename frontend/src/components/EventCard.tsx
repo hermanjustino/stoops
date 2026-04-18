@@ -1,6 +1,6 @@
 import React from 'react';
 import { Calendar, MapPin, ExternalLink } from 'lucide-react';
-import { StandardEvent } from '../types/event';
+import type { StandardEvent } from '../types/event';
 
 const SOURCE_COLORS: Record<string, string> = {
   ticketmaster: '#0071E3',
