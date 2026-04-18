@@ -44,6 +44,7 @@ const EventCard: React.FC<EventCardProps> = ({ event, isSelected, onClick }) => 
   const sourceColor = SOURCE_COLORS[event.source] ?? '#0071E3';
   const catStyle = getCategoryStyle(event.category);
   const isBathroom = event.type === 'bathroom';
+  const isLandmark = event.type === 'landmark';
   const dist = formatDistance(event.distance);
 
   return (
@@ -82,7 +83,7 @@ const EventCard: React.FC<EventCardProps> = ({ event, isSelected, onClick }) => 
               {catStyle.emoji} {event.category}
             </span>
           )}
-          {!isBathroom && (
+          {!isBathroom && !isLandmark && (
             <span style={{
               fontSize: '0.65rem',
               fontWeight: 600,
@@ -100,10 +101,17 @@ const EventCard: React.FC<EventCardProps> = ({ event, isSelected, onClick }) => 
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
         {/* Date/time — only for events */}
-        {!isBathroom && event.date && (
+        {!isBathroom && !isLandmark && event.date && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
             <Calendar size={12} />
             {formatDate(event.date)}
+          </div>
+        )}
+        {/* Designation year — for landmarks */}
+        {isLandmark && event.designation && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+            <Calendar size={12} />
+            Designated {event.designation}
           </div>
         )}
         {/* Hours — for bathrooms */}
@@ -117,6 +125,12 @@ const EventCard: React.FC<EventCardProps> = ({ event, isSelected, onClick }) => 
           <MapPin size={12} />
           {event.venue || event.address}
         </div>
+        {/* Alternate name for landmarks */}
+        {isLandmark && event.alternateName && (
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+            {event.alternateName}
+          </span>
+        )}
         {/* Accessibility badge for bathrooms */}
         {isBathroom && event.accessible && (
           <span style={{ fontSize: '0.7rem', color: '#22C55E', fontWeight: 600 }}>
@@ -135,23 +149,27 @@ const EventCard: React.FC<EventCardProps> = ({ event, isSelected, onClick }) => 
           <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
             {event.operator ?? 'Public'}
           </span>
+        ) : isLandmark ? (
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+            {event.venue}
+          </span>
         ) : event.price ? (
           <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>From {event.price}</span>
         ) : (
           <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Price TBD</span>
         )}
 
-        {!isBathroom ? (
+        {isLandmark ? (
           <a
             href={event.url}
             target="_blank"
             rel="noopener noreferrer"
             onClick={e => e.stopPropagation()}
-            style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', color: sourceColor, textDecoration: 'none', fontWeight: 500 }}
+            style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', color: '#92400E', textDecoration: 'none', fontWeight: 500 }}
           >
-            Tickets <ExternalLink size={11} />
+            Learn More <ExternalLink size={11} />
           </a>
-        ) : (
+        ) : isBathroom ? (
           <a
             href={`https://maps.google.com/?q=${encodeURIComponent(event.address || event.venue)}`}
             target="_blank"
@@ -160,6 +178,16 @@ const EventCard: React.FC<EventCardProps> = ({ event, isSelected, onClick }) => 
             style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', color: '#F43F5E', textDecoration: 'none', fontWeight: 500 }}
           >
             Directions <ExternalLink size={11} />
+          </a>
+        ) : (
+          <a
+            href={event.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={e => e.stopPropagation()}
+            style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', color: sourceColor, textDecoration: 'none', fontWeight: 500 }}
+          >
+            Tickets <ExternalLink size={11} />
           </a>
         )}
       </div>

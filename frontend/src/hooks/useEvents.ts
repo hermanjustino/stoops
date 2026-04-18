@@ -21,8 +21,15 @@ export function useEvents(): UseEventsResult {
         const res = await fetch(`${API_URL}/api/events`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
+        // Tag items by type based on category
+        const tagged = (data.events as StandardEvent[]).map(e => ({
+          ...e,
+          type: e.category === 'Landmark' ? 'landmark' as const
+             : e.category === 'Bathroom' ? 'bathroom' as const
+             : 'event' as const,
+        }));
         // Merge API events with bathroom data
-        setEvents([...data.events, ...MOCK_BATHROOMS]);
+        setEvents([...tagged, ...MOCK_BATHROOMS]);
       } catch {
         // Fall back to mock data when API is unavailable
         setEvents([...MOCK_EVENTS, ...MOCK_BATHROOMS]);

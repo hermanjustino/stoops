@@ -26,6 +26,7 @@ interface Props {
 
 const DetailPanel: React.FC<Props> = ({ event, onClose }) => {
   const isBathroom = event.type === 'bathroom';
+  const isLandmark = event.type === 'landmark';
   const catStyle = getCategoryStyle(event.category);
   const dist = formatDistance(event.distance);
 
@@ -42,7 +43,7 @@ const DetailPanel: React.FC<Props> = ({ event, onClose }) => {
     }}>
       {/* Color header bar matching category */}
       <div style={{
-        flexShrink: 0, height: isBathroom ? '80px' : '180px',
+        flexShrink: 0, height: (isBathroom || isLandmark) ? '80px' : '180px',
         position: 'relative', overflow: 'hidden',
         background: event.imageUrl ? undefined : `linear-gradient(135deg, ${catStyle.bg}, ${catStyle.bg}99)`,
       }}>
@@ -54,7 +55,7 @@ const DetailPanel: React.FC<Props> = ({ event, onClose }) => {
         )}
         {!event.imageUrl && (
           <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <span style={{ fontSize: isBathroom ? 36 : 48, opacity: 0.6 }}>{catStyle.emoji}</span>
+            <span style={{ fontSize: (isBathroom || isLandmark) ? 36 : 48, opacity: 0.6 }}>{catStyle.emoji}</span>
           </div>
         )}
       </div>
@@ -94,9 +95,16 @@ const DetailPanel: React.FC<Props> = ({ event, onClose }) => {
           )}
 
           {/* Date/time for events */}
-          {!isBathroom && event.date && (
+          {!isBathroom && !isLandmark && event.date && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
               <Calendar size={14} />{formatDate(event.date)}
+            </div>
+          )}
+
+          {/* Designation year for landmarks */}
+          {isLandmark && event.designation && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
+              <Calendar size={14} />Designated {event.designation}
             </div>
           )}
 
@@ -111,6 +119,13 @@ const DetailPanel: React.FC<Props> = ({ event, onClose }) => {
             <MapPin size={14} style={{ flexShrink: 0, marginTop: '2px' }} />
             <span>{event.venue}{event.address ? ` · ${event.address}` : ''}</span>
           </div>
+
+          {/* Landmark-specific info */}
+          {isLandmark && event.alternateName && (
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+              {event.alternateName}
+            </div>
+          )}
 
           {/* Bathroom-specific info */}
           {isBathroom && (
@@ -130,7 +145,7 @@ const DetailPanel: React.FC<Props> = ({ event, onClose }) => {
         </div>
 
         <div style={{ display: 'flex', gap: '0.75rem' }}>
-          {!isBathroom ? (
+          {isLandmark ? (
             <a
               href={event.url}
               target="_blank"
@@ -138,14 +153,14 @@ const DetailPanel: React.FC<Props> = ({ event, onClose }) => {
               style={{
                 flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
                 padding: '0.9rem', borderRadius: '14px',
-                background: 'var(--accent-blue)', color: '#fff',
+                background: '#92400E', color: '#fff',
                 fontWeight: 600, fontSize: '0.9rem', textDecoration: 'none',
                 fontFamily: 'var(--font-family)',
               }}
             >
-              {event.price ? `Get Tickets · ${event.price}` : 'Get Tickets'} <ExternalLink size={14} />
+              Learn More <ExternalLink size={14} />
             </a>
-          ) : (
+          ) : isBathroom ? (
             <a
               href={`https://maps.google.com/?daddr=${event.lat},${event.lng}`}
               target="_blank"
@@ -159,6 +174,21 @@ const DetailPanel: React.FC<Props> = ({ event, onClose }) => {
               }}
             >
               Get Directions <Navigation size={14} />
+            </a>
+          ) : (
+            <a
+              href={event.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                padding: '0.9rem', borderRadius: '14px',
+                background: 'var(--accent-blue)', color: '#fff',
+                fontWeight: 600, fontSize: '0.9rem', textDecoration: 'none',
+                fontFamily: 'var(--font-family)',
+              }}
+            >
+              {event.price ? `Get Tickets · ${event.price}` : 'Get Tickets'} <ExternalLink size={14} />
             </a>
           )}
           <a
