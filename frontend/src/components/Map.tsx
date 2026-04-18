@@ -2,7 +2,22 @@ import React, { useEffect, useState } from 'react';
 import { APIProvider, Map as GoogleMap, AdvancedMarker, useMap } from '@vis.gl/react-google-maps';
 import type { StandardEvent } from '../types/event';
 
-const EVENT_COLOR = '#8B5CF6';
+const CATEGORY_PIN: Record<string, { bg: string; emoji: string }> = {
+  'Music':         { bg: '#8B5CF6', emoji: '🎵' },
+  'Food & Drink':  { bg: '#F59E0B', emoji: '🍽️' },
+  'Art & Culture': { bg: '#3B82F6', emoji: '🎨' },
+  'Comedy':        { bg: '#EC4899', emoji: '😂' },
+  'Nightlife':     { bg: '#6366F1', emoji: '🌙' },
+  'Sports':        { bg: '#EF4444', emoji: '⚽' },
+  'Community':     { bg: '#22C55E', emoji: '🤝' },
+  'Family':        { bg: '#14B8A6', emoji: '👨‍👩‍👧' },
+  'Free':          { bg: '#10B981', emoji: '🆓' },
+};
+const DEFAULT_PIN = { bg: '#8B5CF6', emoji: '📍' };
+
+export function getCategoryStyle(category: string | null | undefined) {
+  return CATEGORY_PIN[category ?? ''] ?? DEFAULT_PIN;
+}
 
 interface MapProps {
   apiKey: string;
@@ -48,6 +63,9 @@ const MapInner: React.FC<MapInnerProps> = ({ events, selectedEventId, happeningN
     <>
       {mappable.map(event => {
         const isSelected = event.id === selectedEventId;
+        const pin = getCategoryStyle(event.category);
+        const size = isSelected ? 42 : 34;
+
         return (
           <AdvancedMarker
             key={event.id}
@@ -60,22 +78,33 @@ const MapInner: React.FC<MapInnerProps> = ({ events, selectedEventId, happeningN
               {happeningNow && (
                 <div style={{
                   position: 'absolute',
-                  width: '28px', height: '28px', borderRadius: '50%',
-                  background: `${EVENT_COLOR}40`,
+                  width: `${size + 12}px`, height: `${size + 12}px`, borderRadius: '50%',
+                  background: `${pin.bg}40`,
                   animation: 'markerPulse 1.5s ease-out infinite',
                 }} />
               )}
               <div style={{
-                width: isSelected ? 20 : 14,
-                height: isSelected ? 20 : 14,
-                borderRadius: '50%',
-                background: isSelected ? '#1D1D1F' : EVENT_COLOR,
-                border: '2.5px solid white',
+                width: size,
+                height: size,
+                borderRadius: '50% 50% 50% 0',
+                transform: `rotate(-45deg)${isSelected ? ' scale(1.1)' : ''}`,
+                background: pin.bg,
+                border: `2.5px solid ${isSelected ? '#fff' : 'rgba(255,255,255,0.9)'}`,
                 boxShadow: isSelected
-                  ? '0 0 0 3px rgba(29,29,31,0.2), 0 2px 10px rgba(0,0,0,0.3)'
-                  : '0 2px 8px rgba(139,92,246,0.4)',
+                  ? `0 4px 14px rgba(0,0,0,0.3), 0 0 0 3px ${pin.bg}40`
+                  : '0 2px 8px rgba(0,0,0,0.25)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
                 transition: 'all 0.2s ease',
-              }} />
+                cursor: 'pointer',
+              }}>
+                <span style={{
+                  transform: 'rotate(45deg)',
+                  fontSize: isSelected ? 18 : 15,
+                  lineHeight: 1,
+                }}>
+                  {pin.emoji}
+                </span>
+              </div>
             </div>
           </AdvancedMarker>
         );

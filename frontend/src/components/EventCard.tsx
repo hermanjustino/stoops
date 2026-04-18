@@ -1,6 +1,7 @@
 import React from 'react';
 import { Calendar, MapPin, ExternalLink } from 'lucide-react';
 import type { StandardEvent } from '../types/event';
+import { getCategoryStyle } from './Map';
 
 const SOURCE_COLORS: Record<string, string> = {
   ticketmaster: '#0071E3',
@@ -31,7 +32,8 @@ function formatDate(dateStr: string): string {
 }
 
 const EventCard: React.FC<EventCardProps> = ({ event, isSelected, onClick }) => {
-  const accentColor = SOURCE_COLORS[event.source] ?? '#0071E3';
+  const sourceColor = SOURCE_COLORS[event.source] ?? '#0071E3';
+  const catStyle = getCategoryStyle(event.category);
 
   return (
     <div
@@ -40,7 +42,7 @@ const EventCard: React.FC<EventCardProps> = ({ event, isSelected, onClick }) => 
       style={{
         marginBottom: '0.75rem',
         cursor: 'pointer',
-        borderLeft: isSelected ? `3px solid ${accentColor}` : '3px solid transparent',
+        borderLeft: `3px solid ${isSelected ? catStyle.bg : catStyle.bg + '60'}`,
         transition: 'border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease',
       }}
     >
@@ -55,18 +57,32 @@ const EventCard: React.FC<EventCardProps> = ({ event, isSelected, onClick }) => 
         <h3 style={{ fontSize: '0.95rem', lineHeight: '1.3', flex: 1, marginRight: '0.5rem' }}>
           {event.title}
         </h3>
-        <span style={{
-          fontSize: '0.65rem',
-          fontWeight: 600,
-          padding: '2px 6px',
-          borderRadius: '4px',
-          background: accentColor + '20',
-          color: accentColor,
-          whiteSpace: 'nowrap',
-          flexShrink: 0,
-        }}>
-          {SOURCE_LABELS[event.source]}
-        </span>
+        <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
+          {event.category && (
+            <span style={{
+              fontSize: '0.65rem',
+              fontWeight: 600,
+              padding: '2px 8px',
+              borderRadius: '980px',
+              background: catStyle.bg,
+              color: '#fff',
+              whiteSpace: 'nowrap',
+            }}>
+              {catStyle.emoji} {event.category}
+            </span>
+          )}
+          <span style={{
+            fontSize: '0.65rem',
+            fontWeight: 600,
+            padding: '2px 6px',
+            borderRadius: '4px',
+            background: sourceColor + '20',
+            color: sourceColor,
+            whiteSpace: 'nowrap',
+          }}>
+            {SOURCE_LABELS[event.source]}
+          </span>
+        </div>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
@@ -90,7 +106,7 @@ const EventCard: React.FC<EventCardProps> = ({ event, isSelected, onClick }) => 
           target="_blank"
           rel="noopener noreferrer"
           onClick={e => e.stopPropagation()}
-          style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', color: accentColor, textDecoration: 'none', fontWeight: 500 }}
+          style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', color: sourceColor, textDecoration: 'none', fontWeight: 500 }}
         >
           Tickets <ExternalLink size={11} />
         </a>

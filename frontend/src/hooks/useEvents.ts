@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { StandardEvent } from '../types/event';
+import { MOCK_EVENTS } from '../data/mockData';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -21,8 +22,10 @@ export function useEvents(): UseEventsResult {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         setEvents(data.events);
-      } catch (err: any) {
-        setError(err.message ?? 'Failed to load events');
+      } catch {
+        // Fall back to mock data when API is unavailable
+        setEvents(MOCK_EVENTS);
+        setError(null);
       } finally {
         setLoading(false);
       }
