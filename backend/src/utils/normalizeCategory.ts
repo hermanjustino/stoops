@@ -21,7 +21,9 @@ const TICKETMASTER_GENRE_MAP: Record<string, string> = {
   'comedy': 'Comedy',
   'family': 'Family',
   "children's theatre": 'Family',
-  'dance': 'Nightlife',
+  "children's music": 'Family',
+  'dance': 'Art & Culture',
+  'ballet': 'Art & Culture',
   'hip-hop/rap': 'Music',
   'r&b': 'Music',
   'jazz': 'Music',
@@ -145,15 +147,18 @@ const SEATGEEK_TYPE_MAP: Record<string, string> = {
   'volleyball': 'Sports',
 
   'theater': 'Art & Culture',
+  'theatre': 'Art & Culture',
+  'broadway': 'Art & Culture',
   'broadway_tickets_national': 'Art & Culture',
   'cirque_du_soleil': 'Art & Culture',
   'musical': 'Art & Culture',
   'plays': 'Art & Culture',
   'opera': 'Art & Culture',
   'film': 'Art & Culture',
-
-  'dance_performance_tour': 'Nightlife',
-  'dance': 'Nightlife',
+  'entertainment': 'Art & Culture',
+  'dance_performance_tour': 'Art & Culture',
+  'dance': 'Art & Culture',
+  'ballet': 'Art & Culture',
 
   'family': 'Family',
   'kids': 'Family',
@@ -248,13 +253,13 @@ export function normalizeEventbriteCategory(
 
 // ---------- Title-based fallback ----------
 const TITLE_KEYWORDS: [RegExp, string][] = [
-  [/\b(concert|live music|dj set|band|singer|rapper|hip.?hop|jazz|blues|rock|pop|country|folk|orchestra|symphony|choir|karaoke)\b/i, 'Music'],
-  [/\b(comedy|stand.?up|improv|open mic|roast|sketch)\b/i, 'Comedy'],
-  [/\b(game|match|tournament|championship|playoffs|vs\.?|boxing|fight night|wrestling|mma|ufc)\b/i, 'Sports'],
-  [/\b(art|gallery|exhibit|museum|theater|theatre|ballet|opera|dance show|film screening|book reading|poetry|literary)\b/i, 'Art & Culture'],
-  [/\b(food|tasting|brunch|dinner|cocktail|wine|beer|happy hour|chef|cooking class|supper club|food truck)\b/i, 'Food & Drink'],
-  [/\b(club night|nightclub|rave|afterparty|after party|late night|dance party|glow party)\b/i, 'Nightlife'],
-  [/\b(kids|children|family|toddler|puppet|storytime|story time)\b/i, 'Family'],
+  [/\b(concert|live music|dj set|band|singer|rapper|hip.?hop|jazz|blues|rock|pop|country|folk|orchestra|symphony|choir|karaoke|philharmonic)\b/i, 'Music'],
+  [/\b(comedy|stand.?up|improv|open mic|roast|sketch|comedians?)\b/i, 'Comedy'],
+  [/\b(game|match|tournament|championship|playoffs|vs\.?|boxing|fight night|wrestling|mma|ufc|knicks|yankees|mets|nets|rangers|islanders|nycfc)\b/i, 'Sports'],
+  [/\b(museum|gallery|exhibit(?:ion)?|art\b|artist|theater|theatre|broadway|musical|ballet|opera|dance show|film screening|book reading|poetry|literary|stencil|portrait|sculpture|immersive|magic|illusio|amaze)\b/i, 'Art & Culture'],
+  [/\b(food|tasting|brunch|dinner|cocktail|wine|beer|happy hour|chef|cooking class|supper club|food truck|candy|bake|baking)\b/i, 'Food & Drink'],
+  [/\b(club night|nightclub|rave|afterparty|after party|late night|dance party|glow party|dj\b)\b/i, 'Nightlife'],
+  [/\b(kids|children|family|toddler|puppet|storytime|story time|bubble show|crafting)\b/i, 'Family'],
   [/\b(volunteer|community|fundraiser|charity|workshop|meetup|meet.?up|networking|town hall|rally|march|cleanup|block party)\b/i, 'Community'],
 ];
 
