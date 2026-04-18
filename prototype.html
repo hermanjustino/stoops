@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Stoops — NYC Discovery Map</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #F5F5F7;
+  --glass: rgba(255,255,255,0.82);
+  --glass-border: rgba(255,255,255,0.45);
+  --text: #1D1D1F;
+  --text-sec: #86868B;
+  --accent: #0071E3;
+  --purple: #8B5CF6;
+  --amber: #F59E0B;
+  --blue: #3B82F6;
+  --rose: #F43F5E;
+  --green: #22C55E;
+  --red: #EF4444;
+  --radius: 16px;
+  --radius-sm: 10px;
+  --shadow: 0 8px 32px rgba(0,0,0,0.12);
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.08);
+  --font: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+html, body {
+  height: 100%; width: 100%; overflow: hidden;
+  font-family: var(--font); color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+#map { position: absolute; inset: 0; z-index: 1; }
+
+/* ── Glass Utility ── */
+.glass {
+  background: var(--glass);
+  backdrop-filter: saturate(180%) blur(24px);
+  -webkit-backdrop-filter: saturate(180%) blur(24px);
+  border: 1px solid var(--glass-border);
+}
+
+/* ── Search Bar ── */
+#search-container {
+  position: fixed; top: 16px; left: 16px; right: 16px;
+  z-index: 1000; display: flex; flex-direction: column; gap: 10px;
+  pointer-events: none;
+}
+#search-bar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px; border-radius: var(--radius);
+  box-shadow: var(--shadow); pointer-events: auto;
+}
+#search-bar svg { flex-shrink: 0; color: var(--text-sec); }
+#search-input {
+  flex: 1; border: none; background: none; outline: none;
+  font-family: var(--font); font-size: 16px; color: var(--text);
+}
+#search-input::placeholder { color: var(--text-sec); }
+
+/* ── Category Chips ── */
+#chips-row {
+  display: flex; gap: 8px; overflow-x: auto; padding: 2px 0;
+  -ms-overflow-style: none; scrollbar-width: none; pointer-events: auto;
+}
+#chips-row::-webkit-scrollbar { display: none; }
+.chip {
+  flex-shrink: 0; padding: 8px 16px; border-radius: 980px;
+  font-size: 13px; font-weight: 500; cursor: pointer;
+  border: none; box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease; pointer-events: auto;
+  white-space: nowrap;
+}
+.chip:hover { transform: translateY(-1px); }
+.chip.active { background: var(--text) !important; color: white !important; border-color: transparent !important; }
+
+/* ── Map Controls (right side) ── */
+#map-controls {
+  position: fixed; right: 16px; top: 50%; transform: translateY(-50%);
+  z-index: 1000; display: flex; flex-direction: column; gap: 10px;
+}
+.map-btn {
+  width: 48px; height: 48px; border-radius: 50%; border: none;
+  box-shadow: var(--shadow); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s ease; font-size: 20px;
+}
+.map-btn:hover { transform: scale(1.08); }
+.map-btn.active { background: var(--text); color: white; border-color: transparent; }
+
+/* ── Bottom Sheet ── */
+#bottom-sheet {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  z-index: 1001; border-radius: 20px 20px 0 0;
+  box-shadow: 0 -4px 32px rgba(0,0,0,0.12);
+  transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  max-height: 75vh; display: flex; flex-direction: column;
+}
+#sheet-handle {
+  padding: 12px 0 8px; text-align: center; cursor: grab;
+  flex-shrink: 0; user-select: none;
+}
+#sheet-handle .bar {
+  width: 40px; height: 5px; background: #D1D5DB; border-radius: 999px;
+  margin: 0 auto 8px;
+}
+#sheet-handle .count {
+  font-size: 14px; font-weight: 500; color: var(--text-sec);
+}
+#sheet-list {
+  flex: 1; overflow-y: auto; padding: 0 16px 24px;
+  -ms-overflow-style: none; scrollbar-width: thin;
+}
+#sheet-sort {
+  display: flex; gap: 8px; padding: 0 16px 12px; flex-shrink: 0;
+}
+.sort-btn {
+  padding: 6px 12px; border-radius: 980px; border: 1px solid #E5E7EB;
+  background: white; font-size: 12px; font-weight: 500; cursor: pointer;
+  font-family: var(--font); transition: all 0.15s;
+}
+.sort-btn.active { background: var(--text); color: white; border-color: transparent; }
+
+/* ── Bottom Sheet Cards ── */
+.sheet-card {
+  display: flex; gap: 12px; padding: 14px; margin-bottom: 10px;
+  border-radius: var(--radius-sm); cursor: pointer;
+  transition: all 0.2s ease; border-left: 4px solid transparent;
+  background: rgba(255,255,255,0.6);
+}
+.sheet-card:hover { background: rgba(255,255,255,0.95); transform: translateX(2px); }
+.sheet-card .thumb {
+  width: 72px; height: 72px; border-radius: 10px; flex-shrink: 0;
+  object-fit: cover; background: #E5E7EB;
+}
+.sheet-card .info { flex: 1; min-width: 0; }
+.sheet-card .title { font-size: 14px; font-weight: 600; margin-bottom: 4px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sheet-card .meta { font-size: 12px; color: var(--text-sec); line-height: 1.5; }
+.sheet-card .badge {
+  display: inline-block; padding: 2px 8px; border-radius: 980px;
+  font-size: 11px; font-weight: 600; margin-top: 4px; color: white;
+}
+
+/* ── Detail Panel ── */
+#detail-panel {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  z-index: 1002; border-radius: 20px 20px 0 0;
+  box-shadow: 0 -8px 40px rgba(0,0,0,0.18);
+  transform: translateY(100%);
+  transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  max-height: 70vh; display: flex; flex-direction: column;
+  overflow: hidden;
+}
+#detail-panel.open { transform: translateY(0); }
+#detail-hero {
+  width: 100%; height: 200px; object-fit: cover; flex-shrink: 0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+#detail-close {
+  position: absolute; top: 12px; right: 12px;
+  width: 36px; height: 36px; border-radius: 50%; border: none;
+  background: rgba(0,0,0,0.5); color: white; font-size: 18px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(10px); z-index: 2;
+}
+#detail-body {
+  padding: 20px; flex: 1; overflow-y: auto;
+}
+#detail-body h2 { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+.detail-row {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 14px; color: var(--text-sec); margin-bottom: 6px;
+}
+.detail-row svg { flex-shrink: 0; }
+#detail-desc { font-size: 14px; line-height: 1.6; color: var(--text-sec); margin: 16px 0; }
+#detail-actions { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+.action-btn {
+  padding: 12px 20px; border-radius: 980px; border: none;
+  font-family: var(--font); font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s;
+}
+.action-btn.primary { background: var(--accent); color: white; }
+.action-btn.primary:hover { opacity: 0.9; }
+.action-btn.secondary { background: #F3F4F6; color: var(--text); }
+.action-btn.secondary:hover { background: #E5E7EB; }
+
+/* ── Detail Badges ── */
+.detail-badges { display: flex; gap: 8px; margin: 12px 0; flex-wrap: wrap; }
+.detail-badge {
+  padding: 4px 12px; border-radius: 980px; font-size: 12px;
+  font-weight: 600; color: white;
+}
+
+/* ── Similar Events Carousel ── */
+#similar-section { margin-top: 24px; padding-top: 20px; border-top: 1px solid #E5E7EB; }
+#similar-section h3 { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+#similar-scroll {
+  display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px;
+  -ms-overflow-style: none; scrollbar-width: none;
+}
+#similar-scroll::-webkit-scrollbar { display: none; }
+.similar-card {
+  flex-shrink: 0; width: 200px; border-radius: var(--radius-sm);
+  overflow: hidden; cursor: pointer; background: white;
+  box-shadow: var(--shadow-sm); transition: transform 0.2s;
+}
+.similar-card:hover { transform: translateY(-2px); }
+.similar-card .sim-img {
+  width: 100%; height: 100px; object-fit: cover;
+  background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+}
+.similar-card .sim-info { padding: 10px; }
+.similar-card .sim-title { font-size: 13px; font-weight: 600; margin-bottom: 4px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.similar-card .sim-meta { font-size: 11px; color: var(--text-sec); }
+
+/* ── Neighborhood Info Popup ── */
+.neighborhood-popup { min-width: 240px; }
+.neighborhood-popup h3 { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+.neighborhood-popup .vibes { display: flex; gap: 4px; flex-wrap: wrap; margin: 8px 0; }
+.neighborhood-popup .vibe {
+  padding: 2px 8px; border-radius: 980px; font-size: 11px;
+  font-weight: 500; background: #EDE9FE; color: #7C3AED;
+}
+.neighborhood-popup .n-desc { font-size: 13px; color: var(--text-sec); line-height: 1.4; margin: 8px 0; }
+.neighborhood-popup .n-rating { font-size: 13px; color: var(--amber); }
+.neighborhood-popup .n-events { font-size: 12px; color: var(--accent); font-weight: 500; cursor: pointer; margin-top: 6px; }
+
+/* ── Pulse animation for Happening Now ── */
+@keyframes pulse-pin {
+  0% { box-shadow: 0 0 0 0 rgba(139,92,246,0.5); }
+  70% { box-shadow: 0 0 0 12px rgba(139,92,246,0); }
+  100% { box-shadow: 0 0 0 0 rgba(139,92,246,0); }
+}
+.pulse-marker { animation: pulse-pin 1.5s infinite; }
+
+/* ── Custom Leaflet pin markers ── */
+.custom-pin {
+  width: 32px; height: 32px; border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  border: 2.5px solid white;
+  transition: transform 0.2s;
+}
+.custom-pin:hover { transform: rotate(-45deg) scale(1.15); }
+.custom-pin .pin-icon {
+  transform: rotate(45deg); font-size: 14px; line-height: 1;
+}
+.pin-event { background: var(--purple); }
+.pin-attraction { background: var(--amber); }
+.pin-landmark { background: var(--blue); }
+.pin-bathroom { background: var(--rose); }
+
+/* ── Cluster override ── */
+.marker-cluster-small, .marker-cluster-medium, .marker-cluster-large {
+  background: rgba(139,92,246,0.25) !important;
+}
+.marker-cluster-small div, .marker-cluster-medium div, .marker-cluster-large div {
+  background: var(--purple) !important; color: white !important;
+  font-family: var(--font) !important; font-weight: 600 !important;
+}
+
+/* ── Search Overlay ── */
+#search-overlay {
+  position: fixed; inset: 0; z-index: 1003;
+  background: rgba(245,245,247,0.96);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  padding: 80px 20px 20px;
+  transform: translateY(-100%); opacity: 0;
+  transition: all 0.3s ease;
+  overflow-y: auto;
+}
+#search-overlay.open { transform: translateY(0); opacity: 1; }
+#search-overlay h4 { font-size: 13px; font-weight: 600; color: var(--text-sec);
+  text-transform: uppercase; letter-spacing: 0.5px; margin: 16px 0 10px; }
+.search-result {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px; border-radius: var(--radius-sm); cursor: pointer;
+  transition: background 0.15s;
+}
+.search-result:hover { background: rgba(0,0,0,0.04); }
+.search-result .sr-dot {
+  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+}
+.search-result .sr-title { font-size: 15px; font-weight: 500; }
+.search-result .sr-sub { font-size: 12px; color: var(--text-sec); }
+
+/* ── Saved Overlay ── */
+#saved-overlay {
+  position: fixed; inset: 0; z-index: 1003;
+  background: rgba(245,245,247,0.97);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  transform: translateX(100%); opacity: 0;
+  transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  display: flex; flex-direction: column;
+}
+#saved-overlay.open { transform: translateX(0); opacity: 1; }
+#saved-header {
+  padding: 20px; display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid #E5E7EB;
+}
+#saved-header h2 { font-size: 20px; font-weight: 700; }
+#saved-close { background: none; border: none; font-size: 24px; cursor: pointer; padding: 4px; color: var(--text-sec); }
+#saved-list { flex: 1; overflow-y: auto; padding: 16px; }
+.saved-empty { text-align: center; padding: 60px 20px; color: var(--text-sec); }
+#saved-show-map {
+  margin: 16px; padding: 14px; border-radius: var(--radius); border: none;
+  background: var(--accent); color: white; font-family: var(--font);
+  font-size: 15px; font-weight: 600; cursor: pointer; text-align: center;
+}
+
+/* ── Leaflet overrides ── */
+.leaflet-control-attribution { font-size: 10px !important; opacity: 0.6; }
+.leaflet-popup-content-wrapper { border-radius: var(--radius-sm) !important; box-shadow: var(--shadow) !important; }
+.leaflet-popup-content { margin: 12px 16px !important; font-family: var(--font) !important; }
+
+/* ── Happening Now indicator ── */
+#happening-indicator {
+  position: fixed; top: 110px; left: 50%; transform: translateX(-50%);
+  z-index: 1000; padding: 8px 20px; border-radius: 980px;
+  font-size: 13px; font-weight: 600; color: white;
+  background: linear-gradient(135deg, var(--purple), #EC4899);
+  box-shadow: var(--shadow);
+  opacity: 0; transition: opacity 0.3s; pointer-events: none;
+}
+#happening-indicator.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- Map -->
+<div id="map"></div>
+
+<!-- Search Container -->
+<div id="search-container">
+  <div id="search-bar" class="glass">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input id="search-input" type="text" placeholder="Search NYC events, places, neighborhoods..." autocomplete="off">
+    <button id="saved-btn" style="background:none;border:none;cursor:pointer;padding:4px;" title="Saved items">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+    </button>
+  </div>
+  <div id="chips-row">
+    <button class="chip glass" data-cat="all">All</button>
+    <button class="chip glass" data-cat="Music">Music</button>
+    <button class="chip glass" data-cat="Food & Drink">Food & Drink</button>
+    <button class="chip glass" data-cat="Art & Culture">Art & Culture</button>
+    <button class="chip glass" data-cat="Comedy">Comedy</button>
+    <button class="chip glass" data-cat="Nightlife">Nightlife</button>
+    <button class="chip glass" data-cat="Sports">Sports</button>
+    <button class="chip glass" data-cat="Community">Community</button>
+    <button class="chip glass" data-cat="Family">Family</button>
+    <button class="chip glass" data-cat="Free">Free</button>
+    <button class="chip glass" data-cat="attraction">Attractions</button>
+    <button class="chip glass" data-cat="landmark">Landmarks</button>
+    <button class="chip glass" data-cat="neighborhood">Neighborhoods</button>
+    <button class="chip glass" data-cat="bathroom">Bathrooms</button>
+  </div>
+</div>
+
+<!-- Map Controls -->
+<div id="map-controls">
+  <button class="map-btn glass" id="btn-happening" title="Happening Now">&#9889;</button>
+  <button class="map-btn glass" id="btn-foryou" title="For You">&#10024;</button>
+  <button class="map-btn glass" id="btn-recenter" title="Re-center">&#9737;</button>
+</div>
+
+<!-- Happening Now Indicator -->
+<div id="happening-indicator">&#9889; Happening Now</div>
+
+<!-- Bottom Sheet -->
+<div id="bottom-sheet" class="glass">
+  <div id="sheet-handle">
+    <div class="bar"></div>
+    <div class="count" id="sheet-count">24 things nearby</div>
+  </div>
+  <div id="sheet-sort">
+    <button class="sort-btn active" data-sort="nearest">Nearest</button>
+    <button class="sort-btn" data-sort="soonest">Soonest</button>
+    <button class="sort-btn" data-sort="popular">Popular</button>
+    <button class="sort-btn" data-sort="foryou">For You</button>
+  </div>
+  <div id="sheet-list"></div>
+</div>
+
+<!-- Detail Panel -->
+<div id="detail-panel" class="glass">
+  <div id="detail-hero" style="position:relative;">
+    <button id="detail-close">&times;</button>
+  </div>
+  <div id="detail-body">
+    <h2 id="detail-title"></h2>
+    <div class="detail-badges" id="detail-badges"></div>
+    <div class="detail-row" id="detail-time">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <span></span>
+    </div>
+    <div class="detail-row" id="detail-venue">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      <span></span>
+    </div>
+    <div class="detail-row" id="detail-price">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      <span></span>
+    </div>
+    <p id="detail-desc"></p>
+    <div id="detail-actions">
+      <button class="action-btn primary" id="btn-tickets">Get Tickets</button>
+      <button class="action-btn secondary" id="btn-save">&#9829; Save</button>
+      <button class="action-btn secondary" id="btn-share">Share</button>
+      <button class="action-btn secondary" id="btn-remind">Remind Me</button>
+    </div>
+    <div id="similar-section">
+      <h3>Similar nearby</h3>
+      <div id="similar-scroll"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Search Overlay -->
+<div id="search-overlay">
+  <h4>Trending Now</h4>
+  <div id="trending-results"></div>
+  <h4>Categories</h4>
+  <div id="search-cats" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;"></div>
+  <h4 id="search-results-label" style="display:none;">Results</h4>
+  <div id="search-results"></div>
+</div>
+
+<!-- Saved Overlay -->
+<div id="saved-overlay">
+  <div id="saved-header">
+    <h2>Saved</h2>
+    <button id="saved-close">&times;</button>
+  </div>
+  <div id="saved-list">
+    <div class="saved-empty">
+      <p style="font-size:40px;margin-bottom:12px;">&#128278;</p>
+      <p style="font-size:16px;font-weight:500;color:var(--text);margin-bottom:4px;">No saved items yet</p>
+      <p style="font-size:14px;">Tap the heart on any event to save it here.</p>
+    </div>
+  </div>
+  <button id="saved-show-map">Show All on Map</button>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script>
+// ─────────────────────────────────────────────
+// MOCK DATA
+// ─────────────────────────────────────────────
+const EVENTS = [
+  { id:'e1', type:'event', title:'Jazz at Lincoln Center', category:'Music', datetime:'2026-04-18T20:00', venue:'Appel Room', address:'10 Columbus Cir', neighborhood:'Midtown West', lat:40.7688, lng:-73.9830, price:'$60', priceType:'Paid', happeningNow:true,
+    desc:'An electrifying evening of jazz featuring the Jazz at Lincoln Center Orchestra with Wynton Marsalis. Experience world-class musicianship in one of NYC\'s most iconic venues.', img:'linear-gradient(135deg,#667eea,#764ba2)' },
+  { id:'e2', type:'event', title:'Central Park Summer Concert', category:'Music', datetime:'2026-04-19T19:00', venue:'Rumsey Playfield', address:'Central Park', neighborhood:'Upper East Side', lat:40.7712, lng:-73.9714, price:'$45', priceType:'Paid', happeningNow:false,
+    desc:'Annual outdoor concert series bringing top musical acts to the heart of Central Park. Bring a blanket and enjoy the warm summer evening under the stars.', img:'linear-gradient(135deg,#f093fb,#f5576c)' },
+  { id:'e3', type:'event', title:'Comedy Cellar Late Show', category:'Comedy', datetime:'2026-04-18T22:00', venue:'Comedy Cellar', address:'117 MacDougal St', neighborhood:'Greenwich Village', lat:40.7301, lng:-74.0005, price:'$25', priceType:'Paid', happeningNow:true,
+    desc:'NYC\'s most legendary comedy club hosts a surprise lineup of comedians every night. You never know who might drop in — past surprises include Dave Chappelle and Amy Schumer.', img:'linear-gradient(135deg,#a18cd1,#fbc2eb)' },
+  { id:'e4', type:'event', title:'Brooklyn Night Bazaar', category:'Food & Drink', datetime:'2026-04-18T18:00', venue:'Brooklyn Bazaar', address:'150 Greenpoint Ave', neighborhood:'Greenpoint', lat:40.7297, lng:-73.9574, price:'Free', priceType:'Free', happeningNow:true,
+    desc:'Weekly indoor market featuring local food vendors, vintage shopping, arcade games, and live bands. The ultimate Friday night hang in Greenpoint.', img:'linear-gradient(135deg,#ffecd2,#fcb69f)' },
+  { id:'e5', type:'event', title:'MOMA First Friday', category:'Art & Culture', datetime:'2026-04-18T16:00', venue:'Museum of Modern Art', address:'11 W 53rd St', neighborhood:'Midtown', lat:40.7614, lng:-73.9776, price:'Free', priceType:'Free', happeningNow:true,
+    desc:'Free admission every first Friday with special gallery talks, live music in the sculpture garden, and cash bars. NYC\'s best free cultural experience.', img:'linear-gradient(135deg,#89f7fe,#66a6ff)' },
+  { id:'e6', type:'event', title:'Knicks vs Celtics', category:'Sports', datetime:'2026-04-19T19:30', venue:'Madison Square Garden', address:'4 Pennsylvania Plaza', neighborhood:'Midtown', lat:40.7505, lng:-73.9934, price:'$85', priceType:'Paid', happeningNow:false,
+    desc:'Playoff basketball at the world\'s most famous arena. The electric atmosphere of MSG during a Knicks playoff game is a bucket-list NYC experience.', img:'linear-gradient(135deg,#f5af19,#f12711)' },
+  { id:'e7', type:'event', title:'Shakespeare in the Park', category:'Art & Culture', datetime:'2026-04-20T20:00', venue:'Delacorte Theater', address:'Central Park', neighborhood:'Upper West Side', lat:40.7796, lng:-73.9690, price:'Free', priceType:'Free', happeningNow:false,
+    desc:'Free outdoor performances of Shakespeare plays in Central Park. Line up early or try the digital lottery for tickets to this beloved NYC summer tradition.', img:'linear-gradient(135deg,#a8edea,#fed6e3)' },
+  { id:'e8', type:'event', title:'Smorgasburg Williamsburg', category:'Food & Drink', datetime:'2026-04-19T11:00', venue:'East River State Park', address:'90 Kent Ave', neighborhood:'Williamsburg', lat:40.7216, lng:-73.9614, price:'Free', priceType:'Free', happeningNow:false,
+    desc:'Brooklyn\'s legendary open-air food market with 100+ local food vendors. From ramen burgers to rainbow grilled cheese — eat your way through the best of NYC food culture.', img:'linear-gradient(135deg,#fddb92,#d1fdff)' },
+  { id:'e9', type:'event', title:'Rooftop DJ Set at Output', category:'Nightlife', datetime:'2026-04-18T23:00', venue:'Output', address:'74 Wythe Ave', neighborhood:'Williamsburg', lat:40.7199, lng:-73.9634, price:'$30', priceType:'Paid', happeningNow:false,
+    desc:'World-class DJs spinning house and techno on one of Brooklyn\'s best rooftops. Panoramic views of the Manhattan skyline as the soundtrack of the night.', img:'linear-gradient(135deg,#0c3483,#a2b6df)' },
+  { id:'e10', type:'event', title:'Family Storytime at BPL', category:'Family', datetime:'2026-04-19T10:00', venue:'Brooklyn Public Library', address:'10 Grand Army Plaza', neighborhood:'Prospect Heights', lat:40.6724, lng:-73.9683, price:'Free', priceType:'Free', happeningNow:false,
+    desc:'Free interactive storytime for kids ages 3-7 with songs, crafts, and themed activities. A beloved Saturday morning tradition for Brooklyn families.', img:'linear-gradient(135deg,#96fbc4,#f9f586)' },
+  { id:'e11', type:'event', title:'LES Art Walk', category:'Art & Culture', datetime:'2026-04-18T17:00', venue:'Various Galleries', address:'Lower East Side', neighborhood:'Lower East Side', lat:40.7187, lng:-73.9881, price:'Free', priceType:'Free', happeningNow:true,
+    desc:'Self-guided tour of 20+ galleries in the Lower East Side with special exhibitions, open studios, and wine receptions. The best way to discover emerging art in NYC.', img:'linear-gradient(135deg,#d299c2,#fef9d7)' },
+  { id:'e12', type:'event', title:'Astoria Beer Garden', category:'Food & Drink', datetime:'2026-04-18T16:00', venue:'Bohemian Hall', address:'29-19 24th Ave', neighborhood:'Astoria', lat:40.7699, lng:-73.9182, price:'Free', priceType:'Free', happeningNow:true,
+    desc:'NYC\'s oldest and largest beer garden — a sprawling outdoor space with Czech beers on tap, grilled meats, and a lively atmosphere since 1910.', img:'linear-gradient(135deg,#f6d365,#fda085)' },
+  { id:'e13', type:'event', title:'Community Yoga in Prospect Park', category:'Community', datetime:'2026-04-19T09:00', venue:'Long Meadow', address:'Prospect Park', neighborhood:'Park Slope', lat:40.6681, lng:-73.9710, price:'Free', priceType:'Free', happeningNow:false,
+    desc:'Free outdoor yoga every Saturday morning led by local instructors. All levels welcome. Bring your own mat and water.', img:'linear-gradient(135deg,#c1dfc4,#deecdd)' },
+  { id:'e14', type:'event', title:'The Lion King on Broadway', category:'Art & Culture', datetime:'2026-04-19T14:00', venue:'Minskoff Theatre', address:'200 W 45th St', neighborhood:'Times Square', lat:40.7580, lng:-73.9855, price:'$99', priceType:'Paid', happeningNow:false,
+    desc:'Disney\'s award-winning musical spectacle brings the African savanna to life with stunning puppetry, costumes, and an unforgettable score by Elton John and Tim Rice.', img:'linear-gradient(135deg,#f7971e,#ffd200)' },
+  { id:'e15', type:'event', title:'Salsa Night at SOBs', category:'Nightlife', datetime:'2026-04-18T21:00', venue:'SOBs', address:'204 Varick St', neighborhood:'SoHo', lat:40.7269, lng:-74.0055, price:'$20', priceType:'Paid', happeningNow:true,
+    desc:'Live salsa bands and social dancing at NYC\'s legendary Latin music venue. Beginner lesson at 9 PM, open dance floor all night.', img:'linear-gradient(135deg,#eb3349,#f45c43)' },
+];
+
+const ATTRACTIONS = [
+  { id:'a1', type:'attraction', title:'Top of the Rock', category:'attraction', lat:40.7593, lng:-73.9794, address:'30 Rockefeller Plaza', neighborhood:'Midtown', price:'$40', hours:'9AM - 12AM', rating:4.7, reviews:12840,
+    desc:'Three observation decks on top of 30 Rock offering unobstructed 360-degree views of Manhattan, including direct views of the Empire State Building and Central Park.', img:'linear-gradient(135deg,#F59E0B,#F97316)',
+    tips:['Go 30 min before sunset for the best light — you get both daylight and night views.','The 67th floor open-air deck has the best photo ops, less crowded than 70th.','Buy timed tickets online to skip the line.'] },
+  { id:'a2', type:'attraction', title:'Chelsea Market', category:'attraction', lat:40.7424, lng:-74.0061, address:'75 9th Ave', neighborhood:'Chelsea', price:'Free', hours:'7AM - 9PM', rating:4.5, reviews:8920,
+    desc:'A food hall and shopping destination housed in a former Nabisco factory. Home to 35+ food vendors, unique shops, and the Instagram-famous lobster roll.', img:'linear-gradient(135deg,#F59E0B,#EAB308)',
+    tips:['Los Tacos No.1 is worth the wait — best tacos in Manhattan.','Go before 11 AM on weekdays to avoid crowds.','The High Line entrance is right outside.'] },
+  { id:'a3', type:'attraction', title:'The High Line', category:'attraction', lat:40.7480, lng:-74.0048, address:'Gansevoort St to 34th St', neighborhood:'Chelsea', price:'Free', hours:'7AM - 10PM', rating:4.6, reviews:15200,
+    desc:'An elevated linear park built on former railroad tracks. 1.45 miles of gardens, art installations, and stunning views of the Hudson River and city skyline.', img:'linear-gradient(135deg,#84CC16,#22C55E)',
+    tips:['Enter at Gansevoort Street and walk north for the best experience.','The Viewing Spur at 10th Ave has the best sunset view.','Combine with Chelsea Market and Whitney Museum for a full day.'] },
+  { id:'a4', type:'attraction', title:'One World Observatory', category:'attraction', lat:40.7127, lng:-74.0134, address:'285 Fulton St', neighborhood:'Financial District', price:'$43', hours:'9AM - 9PM', rating:4.6, reviews:11500,
+    desc:'The observation deck at the top of One World Trade Center. The Sky Portal and immersive elevator ride are unforgettable. Stunning views of Lower Manhattan, Brooklyn, and the Statue of Liberty.', img:'linear-gradient(135deg,#3B82F6,#1D4ED8)',
+    tips:['Book sunset time slot — the views at golden hour are incredible.','The restaurant ONE Dine is overpriced — eat in the Oculus food court instead.','Clear day visibility can reach 50+ miles.'] },
+];
+
+const LANDMARKS = [
+  { id:'l1', type:'landmark', title:'Brooklyn Bridge', category:'landmark', lat:40.7061, lng:-73.9969, address:'Brooklyn Bridge', neighborhood:'DUMBO / City Hall', rating:4.8, reviews:24000,
+    desc:'An iconic hybrid cable-stayed/suspension bridge connecting Manhattan and Brooklyn. Walk the 1.1-mile pedestrian path for one of NYC\'s most iconic experiences.', img:'linear-gradient(135deg,#3B82F6,#6366F1)',
+    tips:['Walk from Brooklyn to Manhattan for the best skyline view ahead of you.','Go at sunrise to avoid crowds — it\'s magical.','Stop at DUMBO for the classic bridge-framed photo at Washington St.'] },
+  { id:'l2', type:'landmark', title:'Grand Central Terminal', category:'landmark', lat:40.7527, lng:-73.9772, address:'89 E 42nd St', neighborhood:'Midtown East', rating:4.7, reviews:18500,
+    desc:'A Beaux-Arts masterpiece and one of the world\'s most beautiful train stations. The celestial ceiling, whispering gallery, and Grand Central Market are must-sees.', img:'linear-gradient(135deg,#60A5FA,#3B82F6)',
+    tips:['Stand in the center and look up — the constellation ceiling is painted backward on purpose.','The whispering gallery is in front of the Oyster Bar — stand in diagonal corners.','Grand Central Market downstairs has great cheap eats.'] },
+  { id:'l3', type:'landmark', title:'Statue of Liberty', category:'landmark', lat:40.6892, lng:-74.0445, address:'Liberty Island', neighborhood:'New York Harbor', rating:4.7, reviews:32000,
+    desc:'The 305-foot neoclassical sculpture gifted by France in 1886. A universal symbol of freedom and one of the most visited monuments in the world.', img:'linear-gradient(135deg,#22D3EE,#3B82F6)',
+    tips:['Book crown tickets 2-3 months in advance — they sell out fast.','Take the first ferry (8:30 AM) to beat the crowds.','Staten Island Ferry is free and passes right by the statue.'] },
+  { id:'l4', type:'landmark', title:'Washington Square Arch', category:'landmark', lat:40.7308, lng:-73.9973, address:'Washington Square Park', neighborhood:'Greenwich Village', rating:4.5, reviews:9200,
+    desc:'The marble Roman triumphal arch at the north end of Washington Square Park. Built in 1892 to commemorate George Washington\'s inauguration centennial.', img:'linear-gradient(135deg,#818CF8,#6366F1)',
+    tips:['Best people-watching in the city — grab a bench near the fountain.','NYU campus surrounds the park — great energy on weekday afternoons.','The chess players on the southwest corner will play anyone for $5.'] },
+];
+
+const BATHROOMS = [
+  { id:'b1', type:'bathroom', title:'Bryant Park Restrooms', lat:40.7536, lng:-73.9832, address:'41 W 40th St', neighborhood:'Midtown', hours:'7AM - 11PM', status:'open', clean:4.8, amenities:['wheelchair','attended'],
+    tips:['Consistently rated NYC\'s cleanest public bathroom.','Full-time attendant keeps it spotless.'] },
+  { id:'b2', type:'bathroom', title:'Central Park Bethesda', lat:40.7736, lng:-73.9709, address:'Central Park, Mid-Park at 72nd', neighborhood:'Upper West Side', hours:'6AM - 1AM', status:'open', clean:3.2, amenities:['wheelchair'],
+    tips:['Can get busy on weekends — try the Loeb Boathouse restrooms nearby.'] },
+  { id:'b3', type:'bathroom', title:'Washington Sq Park', lat:40.7312, lng:-73.9971, address:'Washington Square Park', neighborhood:'Greenwich Village', hours:'6AM - 12AM', status:'open', clean:2.8, amenities:['changing_table'],
+    tips:['Recently renovated. Much better than they used to be.'] },
+  { id:'b4', type:'bathroom', title:'Union Square Pavilion', lat:40.7359, lng:-73.9911, address:'Union Square Park', neighborhood:'Union Square', hours:'8AM - 10PM', status:'closed', clean:3.0, amenities:['wheelchair'],
+    tips:['Closed for renovation until May 2026.'] },
+  { id:'b5', type:'bathroom', title:'Prospect Park Boathouse', lat:40.6652, lng:-73.9649, address:'Prospect Park', neighborhood:'Prospect Heights', hours:'7AM - 8PM', status:'open', clean:3.5, amenities:['wheelchair','changing_table'],
+    tips:['Near the Audubon Center. Clean and rarely crowded.'] },
+];
+
+const NEIGHBORHOODS = [
+  { name:'Williamsburg', vibes:['Hipster','Nightlife','Foodie','Young'], rating:4.3, lat:40.7081, lng:-73.9571, desc:'Brooklyn\'s trendiest neighborhood with vintage shops, craft cocktails, rooftop bars, and the best brunch scene in NYC.',
+    bounds:[[40.7000,-73.9700],[40.7000,-73.9400],[40.7200,-73.9400],[40.7200,-73.9700]] },
+  { name:'Lower East Side', vibes:['Multicultural','Late-Night','Affordable','Artsy'], rating:4.1, lat:40.7153, lng:-73.9847, desc:'A gritty, vibrant neighborhood with incredible food diversity, underground music venues, and galleries.',
+    bounds:[[40.7100,-73.9950],[40.7100,-73.9750],[40.7230,-73.9750],[40.7230,-73.9950]] },
+  { name:'DUMBO', vibes:['Scenic','Tech','Upscale','Instagram'], rating:4.5, lat:40.7033, lng:-73.9894, desc:'Cobblestone streets under the Manhattan Bridge with stunning skyline views, art galleries, and Brooklyn\'s best waterfront.',
+    bounds:[[40.6980,-73.9960],[40.6980,-73.9830],[40.7080,-73.9830],[40.7080,-73.9960]] },
+  { name:'Greenwich Village', vibes:['Historic','Jazz','LGBTQ+','Charming'], rating:4.6, lat:40.7336, lng:-74.0027, desc:'Tree-lined streets, jazz clubs, comedy venues, and Washington Square Park. The cultural heart of bohemian New York.',
+    bounds:[[40.7270,-74.0080],[40.7270,-73.9930],[40.7390,-73.9930],[40.7390,-74.0080]] },
+  { name:'Astoria', vibes:['Multicultural','Affordable','Beer Gardens','Family'], rating:4.2, lat:40.7720, lng:-73.9230, desc:'Queens\' most diverse neighborhood with Greek tavernas, Egyptian bakeries, Bohemian beer gardens, and Astoria Park.',
+    bounds:[[40.7600,-73.9350],[40.7600,-73.9100],[40.7850,-73.9100],[40.7850,-73.9350]] },
+  { name:'SoHo', vibes:['Shopping','Upscale','Architecture','Brunch'], rating:4.4, lat:40.7233, lng:-73.9985, desc:'Cast-iron architecture, high-end boutiques, art galleries, and cobblestone streets. NYC\'s most stylish neighborhood.',
+    bounds:[[40.7190,-74.0050],[40.7190,-73.9920],[40.7280,-73.9920],[40.7280,-74.0050]] },
+];
+
+const ALL_ITEMS = [...EVENTS, ...ATTRACTIONS, ...LANDMARKS, ...BATHROOMS];
+
+// ─────────────────────────────────────────────
+// MAP SETUP
+// ─────────────────────────────────────────────
+const map = L.map('map', {
+  center: [40.7128, -74.006],
+  zoom: 12,
+  zoomControl: false,
+  attributionControl: true
+});
+
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+  attribution: '&copy; OpenStreetMap &copy; CARTO',
+  subdomains: 'abcd', maxZoom: 19
+}).addTo(map);
+
+L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+// ─────────────────────────────────────────────
+// MARKERS
+// ─────────────────────────────────────────────
+const clusterGroup = L.markerClusterGroup({
+  maxClusterRadius: 50,
+  spiderfyOnMaxZoom: true,
+  showCoverageOnHover: false,
+  zoomToBoundsOnClick: true,
+  disableClusteringAtZoom: 16
+});
+
+const markerMap = {};    // id -> L.marker
+let activeCategory = 'all';
+let happeningNow = false;
+let savedItems = new Set();
+
+function pinIcon(item) {
+  const cls = item.type === 'event' ? 'pin-event' :
+              item.type === 'attraction' ? 'pin-attraction' :
+              item.type === 'landmark' ? 'pin-landmark' : 'pin-bathroom';
+  const emoji = item.type === 'event' ? (
+    item.category === 'Music' ? '&#9835;' :
+    item.category === 'Comedy' ? '&#128514;' :
+    item.category === 'Food & Drink' ? '&#127837;' :
+    item.category === 'Art & Culture' ? '&#127912;' :
+    item.category === 'Sports' ? '&#9917;' :
+    item.category === 'Nightlife' ? '&#127769;' :
+    item.category === 'Community' ? '&#129309;' :
+    item.category === 'Family' ? '&#128106;' : '&#127881;'
+  ) : item.type === 'attraction' ? '&#11088;' :
+      item.type === 'landmark' ? '&#127963;' : '&#128701;';
+
+  const pulse = happeningNow && item.happeningNow ? ' pulse-marker' : '';
+  return L.divIcon({
+    className: '',
+    html: `<div class="custom-pin ${cls}${pulse}"><span class="pin-icon">${emoji}</span></div>`,
+    iconSize: [32, 32],
+    iconAnchor: [16, 32],
+    popupAnchor: [0, -34]
+  });
+}
+
+function addMarkers() {
+  clusterGroup.clearLayers();
+  Object.keys(markerMap).forEach(k => delete markerMap[k]);
+
+  ALL_ITEMS.forEach(item => {
+    // Filter logic
+    if (activeCategory !== 'all') {
+      if (['attraction','landmark','bathroom'].includes(activeCategory)) {
+        if (item.type !== activeCategory) return;
+      } else if (activeCategory === 'Free') {
+        if (item.priceType !== 'Free' && item.price !== 'Free') return;
+      } else if (activeCategory === 'neighborhood') {
+        return; // neighborhoods shown as overlays
+      } else {
+        if (item.category !== activeCategory) return;
+      }
+    }
+    if (happeningNow && item.type === 'event' && !item.happeningNow) return;
+    if (happeningNow && item.type === 'bathroom') return;
+
+    const marker = L.marker([item.lat, item.lng], { icon: pinIcon(item) });
+    marker.on('click', () => openDetail(item));
+    markerMap[item.id] = marker;
+    clusterGroup.addLayer(marker);
+  });
+
+  map.addLayer(clusterGroup);
+  updateBottomSheet();
+}
+
+// ─────────────────────────────────────────────
+// NEIGHBORHOOD OVERLAYS
+// ─────────────────────────────────────────────
+let neighborhoodLayers = [];
+
+function showNeighborhoods() {
+  hideNeighborhoods();
+  NEIGHBORHOODS.forEach(n => {
+    const polygon = L.polygon(n.bounds, {
+      color: '#8B5CF6', weight: 2, opacity: 0.6,
+      fillColor: '#8B5CF6', fillOpacity: 0.1
+    });
+    const vibeHtml = n.vibes.map(v => `<span class="vibe">${v}</span>`).join('');
+    const eventsInNeighborhood = EVENTS.filter(e => e.neighborhood === n.name).length;
+    polygon.bindPopup(`
+      <div class="neighborhood-popup">
+        <h3>${n.name}</h3>
+        <div class="n-rating">${'&#9733;'.repeat(Math.round(n.rating))} ${n.rating}</div>
+        <div class="vibes">${vibeHtml}</div>
+        <p class="n-desc">${n.desc}</p>
+        <div class="n-events">${eventsInNeighborhood} events happening here &rarr;</div>
+      </div>
+    `, { maxWidth: 280 });
+    polygon.addTo(map);
+    neighborhoodLayers.push(polygon);
+  });
+}
+
+function hideNeighborhoods() {
+  neighborhoodLayers.forEach(l => map.removeLayer(l));
+  neighborhoodLayers = [];
+}
+
+// ─────────────────────────────────────────────
+// CATEGORY CHIPS
+// ─────────────────────────────────────────────
+document.querySelectorAll('.chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    activeCategory = chip.dataset.cat;
+
+    if (activeCategory === 'neighborhood') {
+      showNeighborhoods();
+    } else {
+      hideNeighborhoods();
+    }
+    addMarkers();
+  });
+});
+// Set "All" active by default
+document.querySelector('.chip[data-cat="all"]').classList.add('active');
+
+// ─────────────────────────────────────────────
+// BOTTOM SHEET
+// ─────────────────────────────────────────────
+const sheet = document.getElementById('bottom-sheet');
+const sheetHandle = document.getElementById('sheet-handle');
+let sheetExpanded = false;
+const SHEET_COLLAPSED = 130;
+const SHEET_EXPANDED_RATIO = 0.6;
+
+function setSheetPosition(expanded) {
+  sheetExpanded = expanded;
+  if (expanded) {
+    sheet.style.transform = `translateY(0)`;
+    sheet.style.maxHeight = `${window.innerHeight * SHEET_EXPANDED_RATIO}px`;
+  } else {
+    sheet.style.transform = `translateY(calc(100% - ${SHEET_COLLAPSED}px))`;
+  }
+}
+setSheetPosition(false);
+
+sheetHandle.addEventListener('click', () => setSheetPosition(!sheetExpanded));
+
+// Drag behavior
+let startY = 0, startTransform = 0, dragging = false;
+sheetHandle.addEventListener('touchstart', e => {
+  dragging = true; startY = e.touches[0].clientY;
+}, { passive: true });
+sheetHandle.addEventListener('touchmove', e => {
+  if (!dragging) return;
+  const dy = e.touches[0].clientY - startY;
+  if (sheetExpanded && dy > 0) {
+    sheet.style.transition = 'none';
+    sheet.style.transform = `translateY(${dy}px)`;
+  } else if (!sheetExpanded && dy < 0) {
+    sheet.style.transition = 'none';
+    const base = sheet.getBoundingClientRect().height - SHEET_COLLAPSED;
+    sheet.style.transform = `translateY(calc(100% - ${SHEET_COLLAPSED - dy}px))`;
+  }
+}, { passive: true });
+sheetHandle.addEventListener('touchend', e => {
+  dragging = false;
+  sheet.style.transition = '';
+  const rect = sheet.getBoundingClientRect();
+  if (rect.top < window.innerHeight * 0.5) {
+    setSheetPosition(true);
+  } else {
+    setSheetPosition(false);
+  }
+});
+
+function colorForType(type) {
+  return type === 'event' ? 'var(--purple)' : type === 'attraction' ? 'var(--amber)' :
+         type === 'landmark' ? 'var(--blue)' : 'var(--rose)';
+}
+
+function updateBottomSheet() {
+  const bounds = map.getBounds();
+  const visible = ALL_ITEMS.filter(item => {
+    if (!bounds.contains([item.lat, item.lng])) return false;
+    if (activeCategory !== 'all') {
+      if (['attraction','landmark','bathroom'].includes(activeCategory)) {
+        if (item.type !== activeCategory) return false;
+      } else if (activeCategory === 'Free') {
+        if (item.priceType !== 'Free' && item.price !== 'Free') return false;
+      } else if (activeCategory === 'neighborhood') {
+        return item.type === 'event';
+      } else {
+        if (item.category !== activeCategory) return false;
+      }
+    }
+    if (happeningNow && item.type === 'event' && !item.happeningNow) return false;
+    if (happeningNow && item.type === 'bathroom') return false;
+    return true;
+  });
+
+  document.getElementById('sheet-count').textContent = `${visible.length} thing${visible.length !== 1 ? 's' : ''} nearby`;
+
+  const list = document.getElementById('sheet-list');
+  list.innerHTML = visible.map(item => {
+    const badgeLabel = item.type === 'event' ? item.category :
+                       item.type.charAt(0).toUpperCase() + item.type.slice(1);
+    const timeLine = item.datetime ? new Date(item.datetime).toLocaleString('en-US', { weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit' }) :
+                     item.hours || '';
+    return `
+      <div class="sheet-card" data-id="${item.id}" style="border-left-color:${colorForType(item.type)}">
+        <div class="thumb" style="background:${item.img || colorForType(item.type)};"></div>
+        <div class="info">
+          <div class="title">${item.title}</div>
+          <div class="meta">${timeLine}${item.venue ? ' · ' + item.venue : ''}</div>
+          <div class="meta">${item.neighborhood || item.address}${item.price ? ' · ' + item.price : ''}</div>
+          <span class="badge" style="background:${colorForType(item.type)}">${badgeLabel}</span>
+        </div>
+      </div>`;
+  }).join('');
+
+  list.querySelectorAll('.sheet-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const item = ALL_ITEMS.find(i => i.id === card.dataset.id);
+      if (item) {
+        map.flyTo([item.lat, item.lng], 15, { duration: 0.8 });
+        openDetail(item);
+      }
+    });
+  });
+}
+
+map.on('moveend', updateBottomSheet);
+
+// ─────────────────────────────────────────────
+// SORT BUTTONS
+// ─────────────────────────────────────────────
+document.querySelectorAll('.sort-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    updateBottomSheet();
+  });
+});
+
+// ─────────────────────────────────────────────
+// DETAIL PANEL
+// ─────────────────────────────────────────────
+const detailPanel = document.getElementById('detail-panel');
+let currentDetail = null;
+
+function openDetail(item) {
+  currentDetail = item;
+  setSheetPosition(false);
+
+  document.getElementById('detail-hero').style.background = item.img || colorForType(item.type);
+  document.getElementById('detail-title').textContent = item.title;
+
+  // Badges
+  const badgesEl = document.getElementById('detail-badges');
+  const badgeLabel = item.type === 'event' ? item.category : item.type.charAt(0).toUpperCase() + item.type.slice(1);
+  let badgesHtml = `<span class="detail-badge" style="background:${colorForType(item.type)}">${badgeLabel}</span>`;
+  if (item.neighborhood) badgesHtml += `<span class="detail-badge" style="background:#6B7280">${item.neighborhood}</span>`;
+  if (item.priceType === 'Free' || item.price === 'Free') badgesHtml += `<span class="detail-badge" style="background:var(--green)">Free</span>`;
+  if (item.happeningNow) badgesHtml += `<span class="detail-badge" style="background:var(--rose)">Happening Now</span>`;
+  if (item.status) badgesHtml += `<span class="detail-badge" style="background:${item.status==='open'?'var(--green)':'var(--red)'}">` + (item.status==='open'?'Open':'Closed') + `</span>`;
+  badgesEl.innerHTML = badgesHtml;
+
+  // Time
+  const timeEl = document.getElementById('detail-time');
+  if (item.datetime) {
+    timeEl.style.display = 'flex';
+    timeEl.querySelector('span').textContent = new Date(item.datetime).toLocaleString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit' });
+  } else if (item.hours) {
+    timeEl.style.display = 'flex';
+    timeEl.querySelector('span').textContent = item.hours;
+  } else {
+    timeEl.style.display = 'none';
+  }
+
+  // Venue
+  const venueEl = document.getElementById('detail-venue');
+  venueEl.querySelector('span').textContent = (item.venue ? item.venue + ' · ' : '') + (item.address || '');
+
+  // Price
+  const priceEl = document.getElementById('detail-price');
+  if (item.price) {
+    priceEl.style.display = 'flex';
+    priceEl.querySelector('span').textContent = item.price;
+  } else {
+    priceEl.style.display = 'none';
+  }
+
+  // Description
+  let descHtml = item.desc || '';
+  if (item.rating) {
+    descHtml = `<strong>${'&#9733;'.repeat(Math.round(item.rating))} ${item.rating}</strong> (${item.reviews?.toLocaleString() || 0} reviews)<br><br>` + descHtml;
+  }
+  if (item.tips && item.tips.length) {
+    descHtml += '<br><br><strong>Local Tips:</strong><ul style="margin:6px 0 0 18px;">' +
+      item.tips.map(t => `<li style="margin-bottom:4px;font-size:13px;">${t}</li>`).join('') + '</ul>';
+  }
+  if (item.amenities) {
+    const icons = { wheelchair: '&#9855; Wheelchair', changing_table: '&#128700; Changing Table', attended: '&#128100; Attended' };
+    descHtml += '<br><strong>Amenities:</strong> ' + item.amenities.map(a => icons[a] || a).join(' &middot; ');
+  }
+  if (item.clean) {
+    descHtml += `<br><strong>Cleanliness:</strong> ${'&#9733;'.repeat(Math.round(item.clean))} ${item.clean}/5`;
+  }
+  document.getElementById('detail-desc').innerHTML = descHtml;
+
+  // Actions
+  const ticketsBtn = document.getElementById('btn-tickets');
+  ticketsBtn.textContent = item.type === 'event' ? (item.priceType === 'Free' ? 'More Info' : 'Get Tickets') :
+                           item.type === 'bathroom' ? 'Get Directions' : 'Get Directions';
+
+  const saveBtn = document.getElementById('btn-save');
+  saveBtn.innerHTML = savedItems.has(item.id) ? '&#10003; Saved' : '&#9829; Save';
+
+  // Show/hide remind button based on type
+  document.getElementById('btn-remind').style.display = item.type === 'event' ? '' : 'none';
+
+  // Similar events
+  const similarScroll = document.getElementById('similar-scroll');
+  const similar = EVENTS.filter(e => e.id !== item.id && (e.category === item.category || e.neighborhood === item.neighborhood)).slice(0, 6);
+  similarScroll.innerHTML = similar.map(s => `
+    <div class="similar-card" data-id="${s.id}">
+      <div class="sim-img" style="background:${s.img};"></div>
+      <div class="sim-info">
+        <div class="sim-title">${s.title}</div>
+        <div class="sim-meta">${s.venue} · ${s.price}</div>
+      </div>
+    </div>`).join('');
+
+  similarScroll.querySelectorAll('.similar-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const s = ALL_ITEMS.find(i => i.id === card.dataset.id);
+      if (s) { map.flyTo([s.lat, s.lng], 15, { duration: 0.6 }); openDetail(s); }
+    });
+  });
+
+  detailPanel.classList.add('open');
+  map.flyTo([item.lat, item.lng], Math.max(map.getZoom(), 14), { duration: 0.8 });
+}
+
+function closeDetail() {
+  detailPanel.classList.remove('open');
+  currentDetail = null;
+}
+
+document.getElementById('detail-close').addEventListener('click', closeDetail);
+
+// Save button
+document.getElementById('btn-save').addEventListener('click', () => {
+  if (!currentDetail) return;
+  if (savedItems.has(currentDetail.id)) {
+    savedItems.delete(currentDetail.id);
+    document.getElementById('btn-save').innerHTML = '&#9829; Save';
+  } else {
+    savedItems.add(currentDetail.id);
+    document.getElementById('btn-save').innerHTML = '&#10003; Saved';
+  }
+  updateSavedOverlay();
+});
+
+// Share button
+document.getElementById('btn-share').addEventListener('click', () => {
+  if (navigator.share && currentDetail) {
+    navigator.share({ title: currentDetail.title, text: currentDetail.desc?.slice(0,100) + '...', url: window.location.href });
+  }
+});
+
+// Remind button
+document.getElementById('btn-remind').addEventListener('click', () => {
+  if (currentDetail) alert(`Reminder set for "${currentDetail.title}" — you'll be notified 2 hours before.`);
+});
+
+// Tickets / Directions
+document.getElementById('btn-tickets').addEventListener('click', () => {
+  if (currentDetail) {
+    if (currentDetail.type === 'bathroom' || currentDetail.type === 'attraction' || currentDetail.type === 'landmark') {
+      window.open(`https://maps.apple.com/?daddr=${currentDetail.lat},${currentDetail.lng}`, '_blank');
+    } else {
+      alert('Opening ticketing page...');
+    }
+  }
+});
+
+// ─────────────────────────────────────────────
+// HAPPENING NOW
+// ─────────────────────────────────────────────
+const happeningBtn = document.getElementById('btn-happening');
+const happeningIndicator = document.getElementById('happening-indicator');
+
+happeningBtn.addEventListener('click', () => {
+  happeningNow = !happeningNow;
+  happeningBtn.classList.toggle('active', happeningNow);
+  happeningIndicator.classList.toggle('show', happeningNow);
+  addMarkers();
+});
+
+// ─────────────────────────────────────────────
+// FOR YOU
+// ─────────────────────────────────────────────
+const foryouBtn = document.getElementById('btn-foryou');
+let forYouActive = false;
+foryouBtn.addEventListener('click', () => {
+  forYouActive = !forYouActive;
+  foryouBtn.classList.toggle('active', forYouActive);
+  if (forYouActive) {
+    // Simulate "For You" by flying to a recommended area
+    map.flyTo([40.7301, -74.0005], 14, { duration: 1 });
+  }
+});
+
+// ─────────────────────────────────────────────
+// RE-CENTER
+// ─────────────────────────────────────────────
+document.getElementById('btn-recenter').addEventListener('click', () => {
+  map.flyTo([40.7128, -74.006], 12, { duration: 1 });
+});
+
+// ─────────────────────────────────────────────
+// SEARCH
+// ─────────────────────────────────────────────
+const searchInput = document.getElementById('search-input');
+const searchOverlay = document.getElementById('search-overlay');
+
+searchInput.addEventListener('focus', () => {
+  searchOverlay.classList.add('open');
+  populateTrending();
+  populateSearchCats();
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    searchOverlay.classList.remove('open');
+    searchInput.blur();
+    closeDetail();
+  }
+});
+
+function populateTrending() {
+  const trending = EVENTS.filter(e => e.happeningNow).slice(0, 5);
+  document.getElementById('trending-results').innerHTML = trending.map(item => `
+    <div class="search-result" data-id="${item.id}">
+      <div class="sr-dot" style="background:${colorForType(item.type)}"></div>
+      <div>
+        <div class="sr-title">${item.title}</div>
+        <div class="sr-sub">${item.venue} · ${item.neighborhood}</div>
+      </div>
+    </div>`).join('');
+
+  document.querySelectorAll('#trending-results .search-result').forEach(r => {
+    r.addEventListener('click', () => {
+      const item = ALL_ITEMS.find(i => i.id === r.dataset.id);
+      if (item) {
+        searchOverlay.classList.remove('open');
+        searchInput.value = '';
+        map.flyTo([item.lat, item.lng], 15, { duration: 0.8 });
+        openDetail(item);
+      }
+    });
+  });
+}
+
+function populateSearchCats() {
+  const cats = ['Music','Food & Drink','Art & Culture','Comedy','Nightlife','Sports','Free'];
+  document.getElementById('search-cats').innerHTML = cats.map(c =>
+    `<button class="chip glass" style="font-size:12px;padding:6px 14px;" onclick="document.getElementById('search-overlay').classList.remove('open');document.querySelector('.chip[data-cat=\\'${c}\\']')?.click();">${c}</button>`
+  ).join('');
+}
+
+// Live search
+let searchTimeout;
+searchInput.addEventListener('input', () => {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    const q = searchInput.value.toLowerCase().trim();
+    const resultsDiv = document.getElementById('search-results');
+    const label = document.getElementById('search-results-label');
+
+    if (!q) { resultsDiv.innerHTML = ''; label.style.display = 'none'; return; }
+    label.style.display = 'block';
+
+    const matches = ALL_ITEMS.filter(i =>
+      i.title.toLowerCase().includes(q) ||
+      (i.venue && i.venue.toLowerCase().includes(q)) ||
+      (i.neighborhood && i.neighborhood.toLowerCase().includes(q)) ||
+      (i.desc && i.desc.toLowerCase().includes(q)) ||
+      (i.category && i.category.toLowerCase().includes(q))
+    ).slice(0, 10);
+
+    // Also search neighborhoods
+    const nMatches = NEIGHBORHOODS.filter(n =>
+      n.name.toLowerCase().includes(q) || n.vibes.some(v => v.toLowerCase().includes(q))
+    );
+
+    let html = matches.map(item => `
+      <div class="search-result" data-id="${item.id}" data-type="item">
+        <div class="sr-dot" style="background:${colorForType(item.type)}"></div>
+        <div>
+          <div class="sr-title">${item.title}</div>
+          <div class="sr-sub">${item.type.charAt(0).toUpperCase()+item.type.slice(1)} · ${item.neighborhood || item.address}</div>
+        </div>
+      </div>`).join('');
+
+    html += nMatches.map(n => `
+      <div class="search-result" data-name="${n.name}" data-type="neighborhood">
+        <div class="sr-dot" style="background:var(--purple)"></div>
+        <div>
+          <div class="sr-title">${n.name}</div>
+          <div class="sr-sub">Neighborhood · ${n.vibes.join(', ')}</div>
+        </div>
+      </div>`).join('');
+
+    resultsDiv.innerHTML = html || '<p style="padding:12px;color:var(--text-sec);font-size:14px;">No results found.</p>';
+
+    resultsDiv.querySelectorAll('.search-result').forEach(r => {
+      r.addEventListener('click', () => {
+        searchOverlay.classList.remove('open');
+        searchInput.value = '';
+        if (r.dataset.type === 'item') {
+          const item = ALL_ITEMS.find(i => i.id === r.dataset.id);
+          if (item) { map.flyTo([item.lat, item.lng], 15, { duration: 0.8 }); openDetail(item); }
+        } else {
+          const n = NEIGHBORHOODS.find(n => n.name === r.dataset.name);
+          if (n) {
+            map.flyTo([n.lat, n.lng], 14, { duration: 0.8 });
+            document.querySelector('.chip[data-cat="neighborhood"]')?.click();
+          }
+        }
+      });
+    });
+  }, 300);
+});
+
+// Close search overlay when clicking outside
+searchOverlay.addEventListener('click', e => {
+  if (e.target === searchOverlay) {
+    searchOverlay.classList.remove('open');
+    searchInput.value = '';
+  }
+});
+
+// ─────────────────────────────────────────────
+// SAVED OVERLAY
+// ─────────────────────────────────────────────
+document.getElementById('saved-btn').addEventListener('click', e => {
+  e.stopPropagation();
+  document.getElementById('saved-overlay').classList.add('open');
+  updateSavedOverlay();
+});
+
+document.getElementById('saved-close').addEventListener('click', () => {
+  document.getElementById('saved-overlay').classList.remove('open');
+});
+
+document.getElementById('saved-show-map').addEventListener('click', () => {
+  document.getElementById('saved-overlay').classList.remove('open');
+  // Highlight saved items — for prototype, just zoom to fit
+  if (savedItems.size) {
+    const saved = ALL_ITEMS.filter(i => savedItems.has(i.id));
+    const group = L.featureGroup(saved.map(s => L.marker([s.lat, s.lng])));
+    map.fitBounds(group.getBounds().pad(0.2));
+  }
+});
+
+function updateSavedOverlay() {
+  const list = document.getElementById('saved-list');
+  if (savedItems.size === 0) {
+    list.innerHTML = `<div class="saved-empty">
+      <p style="font-size:40px;margin-bottom:12px;">&#128278;</p>
+      <p style="font-size:16px;font-weight:500;color:var(--text);margin-bottom:4px;">No saved items yet</p>
+      <p style="font-size:14px;color:var(--text-sec);">Tap the heart on any event to save it here.</p>
+    </div>`;
+    return;
+  }
+  const items = ALL_ITEMS.filter(i => savedItems.has(i.id));
+  list.innerHTML = items.map(item => `
+    <div class="sheet-card" data-id="${item.id}" style="border-left-color:${colorForType(item.type)}">
+      <div class="thumb" style="background:${item.img || colorForType(item.type)};"></div>
+      <div class="info">
+        <div class="title">${item.title}</div>
+        <div class="meta">${item.venue || item.address} · ${item.neighborhood || ''}</div>
+        <span class="badge" style="background:${colorForType(item.type)}">${item.type === 'event' ? item.category : item.type}</span>
+      </div>
+    </div>`).join('');
+
+  list.querySelectorAll('.sheet-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const item = ALL_ITEMS.find(i => i.id === card.dataset.id);
+      if (item) {
+        document.getElementById('saved-overlay').classList.remove('open');
+        map.flyTo([item.lat, item.lng], 15, { duration: 0.8 });
+        openDetail(item);
+      }
+    });
+  });
+}
+
+// ─────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────
+addMarkers();
+
+// Close detail on map click (not on marker)
+map.on('click', () => { if (detailPanel.classList.contains('open')) closeDetail(); });
+</script>
+</body>
+</html>
