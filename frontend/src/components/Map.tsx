@@ -12,6 +12,7 @@ const CATEGORY_PIN: Record<string, { bg: string; emoji: string }> = {
   'Community':     { bg: '#22C55E', emoji: '🤝' },
   'Family':        { bg: '#14B8A6', emoji: '👨‍👩‍👧' },
   'Free':          { bg: '#10B981', emoji: '🆓' },
+  'Bathroom':      { bg: '#F43F5E', emoji: '🚻' },
 };
 const DEFAULT_PIN = { bg: '#8B5CF6', emoji: '📍' };
 

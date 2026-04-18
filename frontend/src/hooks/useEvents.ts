@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { StandardEvent } from '../types/event';
-import { MOCK_EVENTS } from '../data/mockData';
+import { MOCK_EVENTS, MOCK_BATHROOMS } from '../data/mockData';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -21,10 +21,11 @@ export function useEvents(): UseEventsResult {
         const res = await fetch(`${API_URL}/api/events`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-        setEvents(data.events);
+        // Merge API events with bathroom data
+        setEvents([...data.events, ...MOCK_BATHROOMS]);
       } catch {
         // Fall back to mock data when API is unavailable
-        setEvents(MOCK_EVENTS);
+        setEvents([...MOCK_EVENTS, ...MOCK_BATHROOMS]);
         setError(null);
       } finally {
         setLoading(false);

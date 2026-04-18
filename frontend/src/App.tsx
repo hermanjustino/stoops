@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Map from './components/Map';
 import FloatingControls from './components/FloatingControls';
 import BottomSheet from './components/BottomSheet';
@@ -17,6 +17,17 @@ function isHappeningNow(dateStr: string): boolean {
   );
 }
 
+/** Haversine distance in miles */
+function getDistanceMi(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 3958.8; // Earth radius in miles
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 function App() {
   const { events, loading, error } = useEvents();
   const [selectedEvent, setSelectedEvent] = useState<StandardEvent | null>(null);
@@ -24,18 +35,41 @@ function App() {
   const [category, setCategory] = useState('All');
   const [happeningNow, setHappeningNow] = useState(false);
   const [timeFilter, setTimeFilter] = useState('all');
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
 
   const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
+
+  // Request user location on mount
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      pos => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => { /* permission denied — fall back to no location */ },
+      { enableHighAccuracy: true },
+    );
+  }, []);
 
   const filtered = useMemo(() => {
     const now = new Date();
 
-    return events.filter(e => {
+    const items = events.filter(e => {
+      // Text search
       if (query && !e.title.toLowerCase().includes(query.toLowerCase()) && !e.venue.toLowerCase().includes(query.toLowerCase())) return false;
-      if (category !== 'All' && !(e.category?.toLowerCase().includes(category.toLowerCase()) ?? false)) return false;
-      if (happeningNow && !isHappeningNow(e.date)) return false;
 
-      if (timeFilter !== 'all') {
+      // Category filter — "Bathrooms" chip maps to the Bathroom category
+      if (category === 'Bathrooms') {
+        if (e.type !== 'bathroom') return false;
+      } else if (category !== 'All') {
+        // Non-bathroom categories should hide bathrooms
+        if (e.type === 'bathroom') return false;
+        if (!(e.category?.toLowerCase().includes(category.toLowerCase()) ?? false)) return false;
+      }
+
+      // Happening Now — skip bathrooms (they're not time-bound)
+      if (happeningNow && e.type !== 'bathroom' && !isHappeningNow(e.date)) return false;
+
+      // Time filter — skip bathrooms
+      if (timeFilter !== 'all' && e.type !== 'bathroom') {
         const eventDate = new Date(e.date);
         const today = new Date(now); today.setHours(0, 0, 0, 0);
         const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
@@ -51,7 +85,19 @@ function App() {
 
       return true;
     });
-  }, [events, query, category, happeningNow, timeFilter]);
+
+    // Compute distance and sort by nearest if user location is available
+    if (userLocation) {
+      for (const item of items) {
+        if (item.lat != null && item.lng != null) {
+          item.distance = getDistanceMi(userLocation.lat, userLocation.lng, item.lat, item.lng);
+        }
+      }
+      items.sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity));
+    }
+
+    return items;
+  }, [events, query, category, happeningNow, timeFilter, userLocation]);
 
   return (
     <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden' }}>
