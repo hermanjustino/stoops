@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Search, Zap, Clock } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Search, Zap, Clock, Info } from 'lucide-react';
 
 const CATEGORIES = ['All', 'Music', 'Food & Drink', 'Art & Culture', 'Comedy', 'Nightlife', 'Sports', 'Community', 'Family', 'Free'];
 
@@ -26,6 +27,7 @@ const FloatingControls: React.FC<Props> = ({
   happeningNow, onHappeningNowToggle, timeFilter, onTimeFilterChange,
 }) => {
   const [timeOpen, setTimeOpen] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <div style={{
@@ -115,6 +117,21 @@ const FloatingControls: React.FC<Props> = ({
             </div>
           )}
         </div>
+
+        <button
+          onClick={() => navigate('/about')}
+          title="About Stoops"
+          style={{
+            width: '46px', height: '46px', borderRadius: '14px', border: 'none',
+            background: 'rgba(255,255,255,0.95)',
+            backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+            boxShadow: '0 2px 16px rgba(0,0,0,0.12)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', flexShrink: 0,
+          }}
+        >
+          <Info size={18} color="var(--text-secondary)" />
+        </button>
       </div>
 
       {/* Category chips */}
