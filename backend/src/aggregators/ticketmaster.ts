@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { StandardEvent } from '../types/event';
+import { normalizeTicketmasterCategory, inferCategoryFromTitle } from '../utils/normalizeCategory';
 
 const BASE_URL = 'https://app.ticketmaster.com/discovery/v2/events.json';
 
@@ -22,10 +23,19 @@ export async function fetchTicketmasterEvents(): Promise<StandardEvent[]> {
   return items.map((event: any): StandardEvent => {
     const venue = event._embedded?.venues?.[0];
     const priceRange = event.priceRanges?.[0];
+    const classification = event.classifications?.[0];
+    const title = event.name ?? '';
+
+    const category =
+      normalizeTicketmasterCategory(
+        classification?.segment?.name,
+        classification?.genre?.name,
+        classification?.subGenre?.name,
+      ) ?? inferCategoryFromTitle(title);
 
     return {
       id: `tm-${event.id}`,
-      title: event.name,
+      title,
       date: event.dates?.start?.dateTime ?? event.dates?.start?.localDate,
       venue: venue?.name ?? 'Unknown Venue',
       address: venue ? `${venue.address?.line1 ?? ''}, ${venue.city?.name ?? ''}` : '',
@@ -35,7 +45,7 @@ export async function fetchTicketmasterEvents(): Promise<StandardEvent[]> {
       imageUrl: event.images?.[0]?.url ?? null,
       url: event.url,
       source: 'ticketmaster',
-      category: event.classifications?.[0]?.segment?.name ?? null,
+      category,
     };
   });
 }

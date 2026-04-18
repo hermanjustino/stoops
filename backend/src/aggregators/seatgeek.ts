@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { StandardEvent } from '../types/event';
+import { normalizeSeatGeekCategory, inferCategoryFromTitle } from '../utils/normalizeCategory';
 
 const BASE_URL = 'https://api.seatgeek.com/2/events';
 
@@ -24,10 +25,14 @@ export async function fetchSeatGeekEvents(): Promise<StandardEvent[]> {
     const venue = event.venue;
     const performer = event.performers?.[0];
     const priceMin = event.stats?.lowest_price;
+    const title = event.title ?? '';
+
+    const category =
+      normalizeSeatGeekCategory(event.type) ?? inferCategoryFromTitle(title);
 
     return {
       id: `sg-${event.id}`,
-      title: event.title,
+      title,
       date: event.datetime_utc,
       venue: venue?.name ?? 'Unknown Venue',
       address: venue ? `${venue.address ?? ''}, ${venue.city ?? ''}` : '',
@@ -37,7 +42,7 @@ export async function fetchSeatGeekEvents(): Promise<StandardEvent[]> {
       imageUrl: performer?.image ?? null,
       url: event.url,
       source: 'seatgeek',
-      category: event.type ?? null,
+      category,
     };
   });
 }

@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { StandardEvent } from '../types/event';
+import { normalizeEventbriteCategory, inferCategoryFromTitle } from '../utils/normalizeCategory';
 
 const BASE_URL = 'https://www.eventbriteapi.com/v3/events/search';
 
@@ -25,10 +26,17 @@ export async function fetchEventbriteEvents(): Promise<StandardEvent[]> {
   return items.map((event: any): StandardEvent => {
     const venue = event.venue;
     const ticketClass = event.ticket_classes?.[0];
+    const title = event.name?.text ?? 'Untitled Event';
+
+    const category =
+      normalizeEventbriteCategory(
+        event.category_id?.toString(),
+        event.subcategory_id?.toString(),
+      ) ?? inferCategoryFromTitle(title);
 
     return {
       id: `eb-${event.id}`,
-      title: event.name?.text ?? 'Untitled Event',
+      title,
       date: event.start?.utc,
       venue: venue?.name ?? 'Unknown Venue',
       address: venue ? `${venue.address?.address_1 ?? ''}, ${venue.address?.city ?? ''}` : '',
@@ -38,7 +46,7 @@ export async function fetchEventbriteEvents(): Promise<StandardEvent[]> {
       imageUrl: event.logo?.url ?? null,
       url: event.url,
       source: 'eventbrite',
-      category: event.category_id ?? null,
+      category,
     };
   });
 }
