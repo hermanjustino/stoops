@@ -1,24 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { APIProvider, Map as GoogleMap, AdvancedMarker, useMap } from '@vis.gl/react-google-maps';
 import type { StandardEvent } from '../types/event';
+import { getCategoryStyle } from '../config/categoryStyles';
 
-const CATEGORY_PIN: Record<string, { bg: string; emoji: string }> = {
-  'Music':         { bg: '#8B5CF6', emoji: '🎵' },
-  'Food & Drink':  { bg: '#F59E0B', emoji: '🍽️' },
-  'Art & Culture': { bg: '#3B82F6', emoji: '🎨' },
-  'Comedy':        { bg: '#EC4899', emoji: '😂' },
-  'Nightlife':     { bg: '#6366F1', emoji: '🌙' },
-  'Sports':        { bg: '#EF4444', emoji: '⚽' },
-  'Community':     { bg: '#22C55E', emoji: '🤝' },
-  'Family':        { bg: '#14B8A6', emoji: '👨‍👩‍👧' },
-  'Free':          { bg: '#10B981', emoji: '🆓' },
-  'Bathroom':      { bg: '#F43F5E', emoji: '🚻' },
-};
-const DEFAULT_PIN = { bg: '#8B5CF6', emoji: '📍' };
-
-export function getCategoryStyle(category: string | null | undefined) {
-  return CATEGORY_PIN[category ?? ''] ?? DEFAULT_PIN;
-}
+export { getCategoryStyle };
 
 interface MapProps {
   apiKey: string;

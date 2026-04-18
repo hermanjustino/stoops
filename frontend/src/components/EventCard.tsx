@@ -1,7 +1,7 @@
 import React from 'react';
 import { Calendar, MapPin, ExternalLink, Navigation } from 'lucide-react';
 import type { StandardEvent } from '../types/event';
-import { getCategoryStyle } from './Map';
+import { getCategoryStyle } from '../config/categoryStyles';
 
 const SOURCE_COLORS: Record<string, string> = {
   ticketmaster:    '#0071E3',

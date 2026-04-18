@@ -1,7 +1,7 @@
 import React from 'react';
 import { X, Calendar, MapPin, ExternalLink, Navigation } from 'lucide-react';
 import type { StandardEvent } from '../types/event';
-import { getCategoryStyle } from './Map';
+import { getCategoryStyle } from '../config/categoryStyles';
 
 function formatDate(s: string) {
   if (!s) return '';

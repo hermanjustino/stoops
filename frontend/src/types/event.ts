@@ -1,4 +1,4 @@
-export type ItemType = 'event' | 'bathroom';
+export type ItemType = 'event' | 'bathroom' | 'landmark';
 
 export interface StandardEvent {
   id: string;
@@ -18,6 +18,9 @@ export interface StandardEvent {
   accessible?: boolean;
   operator?: string;
   hours?: string;
+  // Landmark-specific
+  designation?: string;
+  alternateName?: string;
   // Computed at runtime
   distance?: number;
 }

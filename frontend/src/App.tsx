@@ -56,20 +56,22 @@ function App() {
       // Text search
       if (query && !e.title.toLowerCase().includes(query.toLowerCase()) && !e.venue.toLowerCase().includes(query.toLowerCase())) return false;
 
-      // Category filter — "Bathrooms" chip maps to the Bathroom category
+      // Category filter — special chips for Bathrooms and Landmarks
       if (category === 'Bathrooms') {
         if (e.type !== 'bathroom') return false;
+      } else if (category === 'Landmarks') {
+        if (e.type !== 'landmark') return false;
       } else if (category !== 'All') {
-        // Non-bathroom categories should hide bathrooms
-        if (e.type === 'bathroom') return false;
+        // Non-special categories should hide bathrooms and landmarks
+        if (e.type === 'bathroom' || e.type === 'landmark') return false;
         if (!(e.category?.toLowerCase().includes(category.toLowerCase()) ?? false)) return false;
       }
 
-      // Happening Now — skip bathrooms (they're not time-bound)
-      if (happeningNow && e.type !== 'bathroom' && !isHappeningNow(e.date)) return false;
+      // Happening Now — skip bathrooms and landmarks (they're not time-bound)
+      if (happeningNow && e.type !== 'bathroom' && e.type !== 'landmark' && !isHappeningNow(e.date)) return false;
 
-      // Time filter — skip bathrooms
-      if (timeFilter !== 'all' && e.type !== 'bathroom') {
+      // Time filter — skip bathrooms and landmarks
+      if (timeFilter !== 'all' && e.type !== 'bathroom' && e.type !== 'landmark') {
         const eventDate = new Date(e.date);
         const today = new Date(now); today.setHours(0, 0, 0, 0);
         const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);

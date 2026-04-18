@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Zap, Clock, Info } from 'lucide-react';
 
-const CATEGORIES = ['All', 'Music', 'Food & Drink', 'Art & Culture', 'Comedy', 'Nightlife', 'Sports', 'Community', 'Family', 'Free', 'Bathrooms'];
+const CATEGORIES = ['All', 'Music', 'Food & Drink', 'Art & Culture', 'Comedy', 'Nightlife', 'Sports', 'Community', 'Family', 'Free', 'Landmarks', 'Bathrooms'];
 
 const TIME_OPTIONS = [
   { value: 'all', label: 'Any time' },

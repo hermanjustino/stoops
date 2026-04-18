@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { fetchTicketmasterEvents } from './aggregators/ticketmaster';
 import { fetchSeatGeekEvents } from './aggregators/seatgeek';
 import { fetchEventbriteEvents } from './aggregators/eventbrite';
+import { fetchNYCLandmarks } from './aggregators/landmarks';
 
 dotenv.config();
 
@@ -25,10 +26,11 @@ app.get('/api/events', async (req, res) => {
       fetchTicketmasterEvents(),
       fetchSeatGeekEvents(),
       fetchEventbriteEvents(),
+      fetchNYCLandmarks(),
     ]);
 
     const events = results.flatMap((result, idx) => {
-      const sources = ['ticketmaster', 'seatgeek', 'eventbrite'];
+      const sources = ['ticketmaster', 'seatgeek', 'eventbrite', 'landmarks'];
       if (result.status === 'fulfilled') {
         return result.value;
       } else {
