@@ -122,15 +122,19 @@ const FloatingControls: React.FC<Props> = ({
           onClick={() => navigate('/about')}
           title="About Stoops"
           style={{
-            width: '46px', height: '46px', borderRadius: '14px', border: 'none',
-            background: 'rgba(255,255,255,0.95)',
-            backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-            boxShadow: '0 2px 16px rgba(0,0,0,0.12)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            height: '46px', borderRadius: '14px', border: 'none',
+            padding: '0 16px',
+            background: 'linear-gradient(135deg, #8B5CF6, #EC4899)',
+            boxShadow: '0 2px 16px rgba(139,92,246,0.35)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
             cursor: 'pointer', flexShrink: 0,
+            transition: 'transform 0.2s, box-shadow 0.2s',
           }}
+          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.04)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(139,92,246,0.45)'; }}
+          onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 2px 16px rgba(139,92,246,0.35)'; }}
         >
-          <Info size={18} color="var(--text-secondary)" />
+          <Info size={16} color="#fff" />
+          <span style={{ color: '#fff', fontSize: '0.8rem', fontWeight: 600, fontFamily: 'var(--font-family)', whiteSpace: 'nowrap' }}>About</span>
         </button>
       </div>
 
