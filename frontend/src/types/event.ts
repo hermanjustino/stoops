@@ -1,4 +1,4 @@
-export type ItemType = 'event' | 'bathroom' | 'landmark';
+export type ItemType = 'event' | 'bathroom';
 
 export interface StandardEvent {
   id: string;
@@ -12,15 +12,12 @@ export interface StandardEvent {
   price: string | null;
   imageUrl: string | null;
   url: string;
-  source: 'ticketmaster' | 'seatgeek' | 'eventbrite' | 'nyc-open-data';
+  source: 'ticketmaster' | 'seatgeek' | 'nyc-open-data';
   category: string | null;
   // Bathroom-specific
   accessible?: boolean;
   operator?: string;
   hours?: string;
-  // Landmark-specific
-  designation?: string;
-  alternateName?: string;
   // Computed at runtime
   distance?: number;
 }

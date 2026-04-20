@@ -9,9 +9,6 @@ export interface StandardEvent {
   price: string | null;
   imageUrl: string | null;
   url: string;
-  source: 'ticketmaster' | 'seatgeek' | 'eventbrite' | 'nyc-open-data';
+  source: 'ticketmaster' | 'seatgeek' | 'nyc-open-data';
   category: string | null;
-  // Landmark-specific
-  designation?: string;
-  alternateName?: string;
 }

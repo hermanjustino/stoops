@@ -44,12 +44,12 @@ export const MOCK_EVENTS: StandardEvent[] = [
   {
     id: 'e3', title: 'Comedy Cellar Late Show', date: '2026-04-18T22:00',
     venue: 'Comedy Cellar', address: '117 MacDougal St', lat: 40.7301, lng: -74.0005,
-    price: '$25', imageUrl: null, url: '#', source: 'eventbrite', category: 'Comedy',
+    price: '$25', imageUrl: null, url: '#', source: 'seatgeek', category: 'Comedy',
   },
   {
     id: 'e4', title: 'Brooklyn Night Bazaar', date: '2026-04-18T18:00',
     venue: 'Brooklyn Bazaar', address: '150 Greenpoint Ave', lat: 40.7297, lng: -73.9574,
-    price: 'Free', imageUrl: null, url: '#', source: 'eventbrite', category: 'Food & Drink',
+    price: 'Free', imageUrl: null, url: '#', source: 'seatgeek', category: 'Food & Drink',
   },
   {
     id: 'e5', title: 'MoMA First Friday', date: '2026-04-18T16:00',
@@ -69,7 +69,7 @@ export const MOCK_EVENTS: StandardEvent[] = [
   {
     id: 'e8', title: 'Smorgasburg Williamsburg', date: '2026-04-19T11:00',
     venue: 'East River State Park', address: '90 Kent Ave', lat: 40.7216, lng: -73.9614,
-    price: 'Free', imageUrl: null, url: '#', source: 'eventbrite', category: 'Food & Drink',
+    price: 'Free', imageUrl: null, url: '#', source: 'seatgeek', category: 'Food & Drink',
   },
   {
     id: 'e9', title: 'Rooftop DJ Set', date: '2026-04-18T23:00',
@@ -79,7 +79,7 @@ export const MOCK_EVENTS: StandardEvent[] = [
   {
     id: 'e10', title: 'Family Storytime at BPL', date: '2026-04-19T10:00',
     venue: 'Brooklyn Public Library', address: '10 Grand Army Plaza', lat: 40.6724, lng: -73.9683,
-    price: 'Free', imageUrl: null, url: '#', source: 'eventbrite', category: 'Family',
+    price: 'Free', imageUrl: null, url: '#', source: 'seatgeek', category: 'Family',
   },
   {
     id: 'e11', title: 'LES Art Walk', date: '2026-04-18T17:00',
@@ -89,12 +89,12 @@ export const MOCK_EVENTS: StandardEvent[] = [
   {
     id: 'e12', title: 'Astoria Beer Garden', date: '2026-04-18T16:00',
     venue: 'Bohemian Hall', address: '29-19 24th Ave', lat: 40.7699, lng: -73.9182,
-    price: 'Free', imageUrl: null, url: '#', source: 'eventbrite', category: 'Food & Drink',
+    price: 'Free', imageUrl: null, url: '#', source: 'seatgeek', category: 'Food & Drink',
   },
   {
     id: 'e13', title: 'Community Yoga in Prospect Park', date: '2026-04-19T09:00',
     venue: 'Long Meadow', address: 'Prospect Park', lat: 40.6681, lng: -73.9710,
-    price: 'Free', imageUrl: null, url: '#', source: 'eventbrite', category: 'Community',
+    price: 'Free', imageUrl: null, url: '#', source: 'seatgeek', category: 'Community',
   },
   {
     id: 'e14', title: 'The Lion King on Broadway', date: '2026-04-19T14:00',
