@@ -33,6 +33,11 @@ body {
   display: flex;
 }
 
+/* Ensure Leaflet sits below the app's floating UI */
+.leaflet-container { z-index: 0; }
+.leaflet-pane { z-index: 0; }
+.leaflet-top, .leaflet-bottom { z-index: 0; }
+
 .glass {
   background: var(--card-bg);
   backdrop-filter: var(--glass-effect);
